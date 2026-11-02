@@ -1207,10 +1207,17 @@ function bookingRow(b, side) {
     <div class="row"><strong>${esc(who)}</strong><span>${esc(whenText(b.at))} · ${b.price} грн</span></div>
     <p style="margin:4px 0">${esc(b.request.question)}</p>`;
 }
+function withBadge(row, why) {
+  return row.replace('<strong>', '<span><strong>').replace('</strong>', `</strong><span class="badge" data-why>${why}</span></span>`);
+}
 function clientCabinet(m, u) {
   const mine = db.bookings.filter(b => b.clientId === u.id).sort((x, y) => x.at - y.at);
-  const upcoming = mine.filter(b => b.status === 'booked');
+  const now = Date.now();
+  const upcoming = mine.filter(b => b.status !== 'done' && b.at > now);
+  const overdue = mine.filter(b => b.status !== 'done' && b.at <= now).reverse();
   const past = mine.filter(b => b.status === 'done').reverse();
+  const joinBtn = b => `
+      <div class="actions" style="margin-top:6px"><button class="small" data-join="${b.id}">Приєднатися</button></div></div>`;
   m.innerHTML = `
     <h2>Мій кабінет</h2>
     ${linkedOf(u) ? '<div class="notice">Ви також фахівець. Кабінет фахівця відкривається перемикачем «Фахівець» у меню.</div>' : ''}
@@ -1218,9 +1225,11 @@ function clientCabinet(m, u) {
     <div class="actions"><button class="primary" id="newQ">Поставити нове питання</button></div>
     ${(db.subscriptions || []).some(x => x.userId === u.id) ? `<h3>Підписки на нових фахівців</h3>
       ${(db.subscriptions || []).filter(x => x.userId === u.id).map(x => `<div class="card sub-row"><div class="row"><span>Ви чекаєте фахівця з теми «${esc(catName(x.cat))}»</span><span class="hint">${esc(subState(x))}</span></div><p class="hint" style="margin:0">З ${esc(fmtDateTime(x.createdAt))}${x.budget ? `, бюджет до ${x.budget} грн` : ''}</p></div>`).join('')}` : ''}
+    ${overdue.length ? `<h3>Потребує дії</h3>
+    ${overdue.map(b => withBadge(bookingRow(b, 'client'), 'час минув') + `
+      <p class="hint" style="margin:0">Консультацію не провели.</p>` + joinBtn(b)).join('')}` : ''}
     <h3>Найближчі консультації</h3>
-    ${upcoming.length ? upcoming.map(b => bookingRow(b, 'client') + `
-      <div class="actions" style="margin-top:6px"><button class="small" data-join="${b.id}">Приєднатися</button></div></div>`).join('') : '<p class="hint">Поки немає запланованих консультацій.</p>'}
+    ${upcoming.length ? upcoming.map(b => bookingRow(b, 'client') + joinBtn(b)).join('') : '<p class="hint">Поки немає запланованих консультацій.</p>'}
     <h3>Минулі консультації</h3>
     ${past.length ? past.map(b => bookingRow(b, 'client') + `
       ${b.summaryText ? `<details><summary>Підсумок</summary><ul>${b.summaryText.split('\n').filter(Boolean).map(p => `<li>${esc(p)}</li>`).join('')}</ul></details>` : '<p class="hint">Фахівець ще готує підсумок.</p>'}
@@ -1250,8 +1259,7 @@ function expertTab(groups) {
 function xCard(b) {
   const st = expertState(b);
   const desc = `<details><summary>Опис від клієнта</summary><p style="white-space:pre-wrap">${esc(b.request.text)}</p></details>`;
-  const head = bookingRow(b, 'expert').replace('<strong>', st.why ? `<span><strong>` : '<strong>')
-    .replace('</strong>', st.why ? `</strong><span class="badge" data-why>${st.why}</span></span>` : '</strong>');
+  const head = st.why ? withBadge(bookingRow(b, 'expert'), st.why) : bookingRow(b, 'expert');
   if (st.tab === 'planned') return head + desc + `
       <p class="hint">Посилання на відеозв'язок з'явиться тут за 5 хвилин до початку.</p></div>`;
   if (st.why === 'час минув') return head + desc + `
