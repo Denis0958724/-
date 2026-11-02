@@ -1,0 +1,1583 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Мікро-консультації · прототип</title>
+<style>
+  /* Базові стилі. Розміщення елементів ще не фінальне. */
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 16px; line-height: 1.45; background: #f4f4f4; color: #222; }
+  a { color: #1a4fa0; }
+  header.top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; background: #fff; border-bottom: 1px solid #ccc; padding: 8px 16px; }
+  .brand { font-weight: 700; color: #222; text-decoration: none; }
+  nav.main { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: center; font-size: 15px; }
+  nav.main a { color: #222; }
+  nav.main a[aria-current=page] { font-weight: 700; }
+  #stepsBar { background: #fff; border-bottom: 1px solid #ddd; padding: 6px 16px; }
+  #steps, .wsteps { display: flex; flex-wrap: wrap; gap: 4px; list-style: none; padding: 0; margin: 0; font-size: 13px; }
+  .wsteps { margin: 0 0 12px; }
+  #steps li, .wsteps li { padding: 2px 8px; border: 1px solid #ccc; border-radius: 10px; color: #777; }
+  #steps li.done, .wsteps li.done { background: #e6f2e6; color: #333; }
+  #steps li.current, .wsteps li.current { background: #333; color: #fff; border-color: #333; }
+  .layout { max-width: 860px; margin: 0 auto; padding: 16px; }
+  main { background: #fff; border: 1px solid #ccc; padding: 16px; min-width: 0; }
+  main:focus { outline: none; }
+  h1, h2 { margin-top: 0; }
+  h1:focus, h2:focus { outline: none; }
+  h3 { margin: 16px 0 8px; font-size: 17px; }
+  label { display: block; margin: 12px 0 4px; font-weight: 600; }
+  label.inline { display: inline-block; margin-right: 12px; font-weight: 400; }
+  fieldset { border: 0; padding: 0; margin: 12px 0 0; }
+  legend { font-weight: 600; padding: 0; margin-bottom: 4px; }
+  .radio-col label { display: flex; gap: 6px; align-items: flex-start; font-weight: 400; margin: 6px 0; }
+  .radio-row label { display: inline-flex; gap: 4px; align-items: center; font-weight: 400; margin: 4px 14px 4px 0; }
+  input:not([type=checkbox]):not([type=radio]):not([type=file]), select, textarea { width: 100%; padding: 8px; font: inherit; border: 1px solid #999; background: #fff; }
+  input.short { max-width: 160px; }
+  label.inline select { width: auto; }
+  textarea { min-height: 110px; resize: vertical; }
+  [aria-invalid=true] { border-color: #b00020 !important; }
+  .hint { font-size: 13px; color: #666; margin: 2px 0; }
+  .error { color: #b00020; font-size: 14px; margin: 4px 0; }
+  .warn { background: #fff4d6; border: 1px solid #e0b84a; padding: 8px; margin: 8px 0; font-size: 14px; }
+  .ok { background: #e6f2e6; border: 1px solid #8bbf8b; padding: 8px; margin: 8px 0; }
+  .notice { background: #eef3fb; border: 1px solid #9db3d6; padding: 8px; margin: 0 0 12px; font-size: 14px; }
+  .actions { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+  button { font: inherit; padding: 8px 14px; cursor: pointer; border: 1px solid #333; background: #fff; color: #222; }
+  button.primary { background: #333; color: #fff; }
+  button.small { padding: 3px 8px; font-size: 13px; }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  .card { border: 1px solid #ccc; padding: 12px; margin: 8px 0; }
+  .row { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  .badge { display: inline-block; font-size: 12px; padding: 1px 6px; border: 1px solid #999; border-radius: 8px; margin-left: 4px; }
+  .slots { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+  .slot[aria-pressed=true], .star[aria-pressed=true], .role-switch button[aria-pressed=true] { background: #333; color: #fff; }
+  .role-switch { display: inline-flex; gap: 4px; align-items: center; font-size: 14px; }
+  .video { background: #222; color: #eee; height: 240px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; }
+  table { border-collapse: collapse; width: 100%; font-size: 15px; }
+  td { border-bottom: 1px solid #eee; padding: 4px 0; vertical-align: top; }
+  td:first-child { color: #666; width: 38%; padding-right: 8px; }
+  ul.reasons { margin: 6px 0; padding-left: 0; list-style: none; font-size: 14px; }
+  ul.reasons li.minus { color: #8a3b00; }
+  ul.files { list-style: none; padding: 0; margin: 4px 0; font-size: 14px; }
+  ul.files li { display: flex; gap: 8px; align-items: center; }
+  .match { font-weight: 700; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; }
+  .grid .card { margin: 0; }
+  .grid .card h3 { margin-top: 0; }
+  ol.how { padding-left: 20px; }
+  ol.how li { margin: 6px 0; }
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #999; border-top-color: transparent; border-radius: 50%; animation: spin .8s linear infinite; vertical-align: -2px; margin-right: 6px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="#/">Мікро-консультації</a>
+  <nav class="main" id="nav" aria-label="Головне меню"></nav>
+</header>
+<div id="stepsBar" hidden><ol id="steps" aria-label="Кроки"></ol></div>
+<div id="storageWarn" class="warn" role="status" hidden style="margin:0;padding:8px 16px;border-left:0;border-right:0">Цей перегляд не зберігає дані. Після перезавантаження профіль, заявки і бронювання зникнуть. Щоб усе зберігалось, відкрийте prototype.html у браузері.</div>
+
+<div class="layout">
+  <main id="main" tabindex="-1"></main>
+
+</div>
+
+<script>
+'use strict';
+
+/* ===================== Утиліти ===================== */
+function escRe(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+function norm(s) { return String(s || '').toLowerCase().replace(/[’ʼ`]/g, "'"); }
+// \b не працює з кирилицею, тому початок слова визначаємо через (?<!\p{L}) і прапорець u
+function stemRe(stem, flags = 'giu') { return new RegExp('(?<!\\p{L})' + escRe(stem), flags); }
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmt = ms => { if (ms == null || isNaN(ms) || ms < 0) return '0:00'; const s = Math.round(ms / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
+const uid = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const unique = arr => [...new Set(arr)];
+const trunc = (s, n) => (s.length > n ? s.slice(0, n - 1).trimEnd() + '…' : s);
+const pad = n => String(n).padStart(2, '0');
+// Дати рахуємо за місцевим часом (toISOString дає UTC і біля півночі зсуває дату на добу)
+const localDate = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const localStamp = d => `${localDate(d)}-${pad(d.getHours())}-${pad(d.getMinutes())}`;
+const toMin = t => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+const fromMin = n => `${pad(Math.floor(n / 60))}:${pad(n % 60)}`;
+function labelFor(dateStr) {
+  const [y, mo, d] = dateStr.split('-').map(Number);
+  const dt = new Date(y, mo - 1, d);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const diff = Math.round((dt - today) / 86400000);
+  if (diff === 0) return 'Сьогодні';
+  if (diff === 1) return 'Завтра';
+  if (diff === -1) return 'Вчора';
+  return dt.toLocaleDateString('uk-UA', { weekday: 'long', day: 'numeric', month: 'long' });
+}
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+/* ---------- Часові пояси (помилка 6) ----------
+   Фахівець задає графік у своєму поясі. Слоти і бронювання зберігаються як точний момент (мс UTC),
+   а кожен бачить їх у поясі свого пристрою. */
+const VIEW_TZ = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; } catch { return 'UTC'; } })();
+const KYIV_TZ = (() => { try { new Intl.DateTimeFormat('en-US', { timeZone: 'Europe/Kyiv' }); return 'Europe/Kyiv'; } catch { return 'Europe/Kiev'; } })();
+const _tzFmt = {};
+function tzParts(ms, tz) {
+  const f = _tzFmt[tz] || (_tzFmt[tz] = new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+  const o = {}; for (const p of f.formatToParts(new Date(ms))) o[p.type] = p.value;
+  return { y: +o.year, m: +o.month, d: +o.day, h: +o.hour % 24, mi: +o.minute, s: +o.second };
+}
+function tzOffsetMin(ms, tz) {
+  const p = tzParts(ms, tz);
+  return Math.round((Date.UTC(p.y, p.m - 1, p.d, p.h, p.mi, p.s) - Math.floor(ms / 1000) * 1000) / 60000);
+}
+// Година в поясі tz → точний момент. Друга ітерація потрібна біля переходу на літній час.
+function zonedToUtc(y, mo, d, h, mi, tz) {
+  const guess = Date.UTC(y, mo - 1, d, h, mi);
+  let at = guess - tzOffsetMin(guess, tz) * 60000;
+  at = guess - tzOffsetMin(at, tz) * 60000;
+  return at;
+}
+function utcLabel(tz, ms = Date.now()) {
+  const o = tzOffsetMin(ms, tz), a = Math.abs(o);
+  return `UTC${o < 0 ? '-' : '+'}${Math.floor(a / 60)}${a % 60 ? ':' + pad(a % 60) : ''}`;
+}
+const hhmm = at => { const d = new Date(at); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+const whenText = at => `${labelFor(localDate(new Date(at)))}, ${hhmm(at)}`;
+const expertTz = ex => (ex && ex.tz) || KYIV_TZ;
+
+/* ===================== Довідники ===================== */
+// Напрями з паспорта. AI визначає напрям за основами слів у вільному тексті.
+const CATEGORIES = [
+  { id: 'tax', name: 'Податки і облік', kw: ['подат', 'оподатк', 'фоп', 'облік', 'бухгалт', 'декларац', 'пдфо', 'єсв', 'рро', 'прро', 'звітн', 'пдв', 'акциз'] },
+  { id: 'legal', name: 'Договори й юридичні питання', kw: ['догов', 'оренд', 'суд', 'позов', 'юрист', 'юридич', 'претенз', 'спадщ', 'нотар', 'адвокат', 'закон', 'неустойк', 'розірв', 'контрагент', 'довірен'] },
+  { id: 'career', name: "Кар'єра і резюме", kw: ['резюме', 'співбесід', 'робот', "кар'єр", 'карєр', 'ваканс', 'зарплат', 'linkedin', 'звільн', 'рекрутер', 'офер', 'оффер', 'підвищен', 'роботодав', 'працевлашт'] },
+  { id: 'strategy', name: 'Бізнес-стратегія', kw: ['стратег', 'бізнес-план', 'бізнес план', 'масштаб', 'інвестор', 'стартап', 'конкурент', 'ціноутвор', 'франшиз', 'юніт', 'партнер'] },
+  { id: 'marketing', name: 'Маркетинг', kw: ['маркетинг', 'реклам', 'таргет', 'smm', 'інстаграм', 'instagram', 'бренд', 'просуван', 'лендинг', 'seo', 'контент', 'соцмереж'] },
+  { id: 'tech', name: 'AI та технології', kw: ['штучн', 'нейромереж', 'chatgpt', 'gpt', 'автоматиз', 'програмуван', 'сайт', 'crm', 'python', 'застосунк', 'застосунок', 'ai'] },
+  { id: 'finance', name: 'Фінансова грамотність', kw: ['заощадж', 'інвест', 'кредит', 'іпотек', 'депозит', 'пенсі', 'облігац', 'овдп', 'борг', 'накопич', 'бюджет сім', 'розстрочк'] },
+  { id: 'education', name: 'Освіта і навчання за кордоном', kw: ['навчан', 'вступ', 'університет', 'магістр', 'бакалавр', 'грант', 'стипенд', 'ielts', 'toefl', 'мотиваційн', 'за кордон', 'школ'] },
+];
+const CAT = {};
+for (const c of CATEGORIES) { c.res = c.kw.map(k => stemRe(k)); CAT[c.id] = c; }
+const catName = id => (CAT[id] || {}).name || 'не визначено';
+
+const LEVELS = { student: 'Студент-практик', practitioner: 'Практик', expert: 'Відомий фахівець' };
+const LEVEL_PRICE = { student: [100, 250], practitioner: [250, 500], expert: [500, 1200] };
+const levelFor = years => (+years < 2 ? 'student' : +years < 8 ? 'practitioner' : 'expert');
+const COMMISSION = 0.2;
+const URGENCY_LABEL = { today: 'Сьогодні, терміново', week: 'Протягом тижня' };
+const RESOLVED = { yes: 'так', partly: 'частково', no: 'ні' };
+const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'];
+const MOCK_TIMES = ['09:00', '09:30', '10:00', '11:15', '12:00', '13:30', '15:00', '16:45', '18:00', '19:30', '20:30', '21:15'];
+// «лікарнян…» (лікарняні) не є медичною темою
+const SENSITIVE = /лікар(?!нян)|(?<!\p{L})лік(и|ів|ами)(?!\p{L})|діагноз|хвороб|симптом|аналіз.{0,6}кров|психолог|психотерап|психіатр|депрес|панічн/iu;
+
+// Демо-фахівці (вже перевірені). focus: [основа слова для збігу з запитом, як показати клієнту]
+const MOCK_EXPERTS = [
+  { id: 'm1', cat: 'tax', name: 'Олена Ковальчук', level: 'expert', rating: 4.9, reviews: 87, price: 650, bio: 'Податкова консультантка, 12 років практики.', focus: [['фоп', 'ФОП і єдиний податок'], ['груп', 'вибір групи'], ['перевірк', 'податкові перевірки'], ['пдфо', 'ПДФО']] },
+  { id: 'm2', cat: 'tax', name: 'Андрій Мельник', level: 'practitioner', rating: 4.7, reviews: 31, price: 350, bio: 'Бухгалтер для малого бізнесу, веде понад 40 ФОП.', focus: [['звітн', 'звітність'], ['єсв', 'ЄСВ'], ['рро', 'РРО'], ['прро', 'ПРРО'], ['облік', 'облік ФОП']] },
+  { id: 'm3', cat: 'tax', name: 'Марія Ткач', level: 'student', rating: 4.5, reviews: 8, price: 150, bio: 'Магістрантка, практика в аудиторській фірмі.', focus: [['груп', 'групи ФОП'], ['декларац', 'декларації']] },
+  { id: 'm4', cat: 'legal', name: 'Ігор Бондар', level: 'expert', rating: 4.8, reviews: 64, price: 800, bio: 'Адвокат, договірне право і корпоративні спори.', focus: [['догов', 'договори'], ['суд', 'судові спори'], ['претенз', 'претензії'], ['контрагент', 'спори з контрагентами']] },
+  { id: 'm5', cat: 'legal', name: 'Світлана Шевчук', level: 'practitioner', rating: 4.6, reviews: 22, price: 400, bio: 'Юристка: оренда, трудові договори, претензії.', focus: [['оренд', 'оренда'], ['догов', 'договори'], ['звільн', 'трудові питання']] },
+  { id: 'm6', cat: 'legal', name: 'Дмитро Олійник', level: 'student', rating: 4.3, reviews: 5, price: 180, bio: 'Студент-правник, юридична клініка університету.', focus: [['оренд', 'оренда житла'], ['спадщ', 'спадщина']] },
+  { id: 'm7', cat: 'career', name: 'Ірина Лисенко', level: 'expert', rating: 4.9, reviews: 112, price: 500, bio: 'HR-директорка, 15 років найму в IT та ритейлі.', focus: [['співбесід', 'співбесіди'], ['зарплат', 'переговори про зарплату'], ['офер', 'офери']] },
+  { id: 'm8', cat: 'career', name: 'Тарас Кравець', level: 'practitioner', rating: 4.7, reviews: 40, price: 300, bio: 'Рекрутер: резюме, LinkedIn, підготовка до співбесід.', focus: [['резюме', 'резюме'], ['linkedin', 'LinkedIn'], ['ваканс', 'пошук вакансій']] },
+  { id: 'm9', cat: 'career', name: 'Наталія Поліщук', level: 'student', rating: 4.4, reviews: 9, price: 120, bio: "Кар'єрна консультантка-стажистка.", focus: [['резюме', 'перше резюме'], ['робот', 'пошук першої роботи']] },
+].map(e => ({ ...e, mock: true, verified: true }));
+const SAMPLE_REVIEWS = [
+  ['Чітко і по суті, за 15 хвилин розібрались.', 'Отримав конкретний план дій.'],
+  ['Пояснила складне простими словами.', 'Трохи не вистачило часу, але підсумок допоміг.'],
+  ['Дуже уважно вислухав ситуацію.', 'Відповідь була саме на моє питання.'],
+];
+const SUMMARY_POINTS = {
+  tax: ['Порівняли ліміти доходу для вашої і наступної групи.', 'Визначили, з якого кварталу вигідніше переходити.', 'Список документів для подачі заяви.'],
+  legal: ['Позначили ризиковані пункти договору.', 'Як сформулювати правки для іншої сторони.', 'Що зберегти як докази.'],
+  career: ['Резюме не проходить автоматичний відбір через формат.', 'Переписати перший блок під конкретну вакансію.', 'Додати 2–3 результати в цифрах.'],
+};
+
+/* ===================== Сховище (спільне для всіх вкладок) ===================== */
+// Помилка 4: пов'язує фахівця з анкетою клієнта (наявною з тією ж поштою або новою).
+// Бронювання, які фахівець робив зі свого акаунта, переходять до цієї анкети. Повертає true, якщо щось змінив.
+function linkClientFor(data, ex) {
+  let changed = false;
+  let c = ex.clientId && data.users.find(x => x.id === ex.clientId && x.type === 'client');
+  if (!c) {
+    c = data.users.find(x => x.type === 'client' && !x.expertId && x.email.toLowerCase() === ex.email.toLowerCase());
+    if (!c) {
+      const rec = (data.experts || []).find(e => e.id === ex.id) || {};
+      c = { id: uid('u'), type: 'client', name: ex.name, email: ex.email, about: rec.position || '', createdAt: Date.now() };
+      data.users.push(c);
+    }
+    ex.clientId = c.id; changed = true;
+  }
+  if (c.expertId !== ex.id) { c.expertId = ex.id; changed = true; }
+  (data.bookings || []).forEach(b => { if (b.clientId === ex.id) { b.clientId = c.id; changed = true; } });
+  return changed;
+}
+const STORE_KEY = 'micro-consult-proto-v2';
+const emptyDb = () => ({ users: [], experts: [], bookings: [], currentUserId: null, expertDraft: null, expertSession: null });
+let storageOK = true;
+let db = (() => {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    const data = raw ? { ...emptyDb(), ...JSON.parse(raw) } : emptyDb();
+    let migrated = false;
+    (data.experts || []).forEach(e => {
+      if (e.status === 'pending') { e.status = 'auto_approved'; migrated = true; }
+    });
+    // Помилка 9: справжній пароль фахівця лежить і в акаунті, і в анкеті. Якщо в анкеті його немає,
+    // то пароль в акаунті видала стара міграція (спільний «Secure123»), тож скидаємо його.
+    // Такий фахівець задасть свій пароль при першому вході.
+    (data.users || []).forEach(u => {
+      if (u.type !== 'expert') return;
+      const ex = (data.experts || []).find(e => e.id === u.id);
+      const real = (ex && ex.pass) || '';
+      if (u.pass !== real) { u.pass = real; migrated = true; }
+    });
+    // Помилка 4: у кожного фахівця є пов'язана анкета клієнта на ту саму пошту
+    (data.users || []).filter(u => u.type === 'expert').forEach(u => { if (linkClientFor(data, u)) migrated = true; });
+    // Помилка 6: старі бронювання отримують точний момент часу. Раніше час рахувався за годинником
+    // цього пристрою, тож переводимо саме так, без зсуву.
+    (data.bookings || []).forEach(b => {
+      if (b.at == null && b.date && b.time) {
+        const [y, mo, d] = b.date.split('-').map(Number), [h, mi] = b.time.split(':').map(Number);
+        b.at = new Date(y, mo - 1, d, h, mi).getTime(); migrated = true;
+      }
+    });
+    // Пояс фахівця: старі анкети заповнювали на цьому пристрої
+    (data.experts || []).forEach(e => { if (!e.tz) { e.tz = VIEW_TZ; migrated = true; } });
+    if (migrated) { try { localStorage.setItem(STORE_KEY, JSON.stringify(data)); } catch {} }
+    return data;
+  }
+  catch { storageOK = false; return emptyDb(); } // у вбудованому перегляді localStorage недоступний
+})();
+function commit() {
+  if (!storageOK) return;
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(db)); } catch { storageOK = false; showStorageWarn(); }
+}
+// Помилка 7: якщо сховище недоступне (перегляд Claude), чесно кажемо, що дані зникнуть після перезавантаження
+function showStorageWarn() { const w = document.getElementById('storageWarn'); if (w) w.hidden = storageOK; }
+const me = () => db.users.find(u => u.id === db.currentUserId) || null;
+const myExpertRecord = () => db.experts.find(e => e.id === db.currentUserId) || null;
+
+/* ===================== Стан сценарію ===================== */
+const freshFlow = () => ({ draft: null, text: '', clarifications: [], excluded: [], analysis: null, analysisKey: '', override: false, clarifyMode: null, expertId: null, slot: null, ui: { lvl: '', sort: 'match' }, waitlisted: false });
+let flow = freshFlow();
+// Поточна заявка переживає F5: тримаємо її у сховищі вкладки (sessionStorage).
+// Запис прив'язаний до акаунта, тож після входу іншої людини чужа заявка не з'явиться.
+const FLOW_KEY = 'micro-consult-flow-v1';
+function saveFlow() {
+  try { sessionStorage.setItem(FLOW_KEY, JSON.stringify({ user: db.currentUserId, flow })); } catch { /* у перегляді Claude сховища немає */ }
+}
+function loadFlow() {
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(FLOW_KEY) || 'null');
+    if (!saved || !saved.flow || saved.user !== db.currentUserId) return null;
+    return { ...freshFlow(), ...saved.flow };
+  } catch { return null; }
+}
+flow = loadFlow() || flow;
+window.addEventListener('pagehide', saveFlow);
+const fullText = () => [flow.text, ...flow.clarifications].filter(Boolean).join('\n');
+
+const log = () => {};
+let current = null, screenEnteredAt = Date.now(), screenInterval = null, renderToken = 0;
+let pendingNotice = null, navByApp = false;
+
+function setErr(id, msg, field) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = msg || '';
+  if (field) field.setAttribute('aria-invalid', msg ? 'true' : 'false');
+}
+function fail(errs, first, ctx = '') {
+  const f = first.find(Boolean);
+  if (f) f.focus();
+}
+
+/* ===================== AI-аналіз (імітація) =====================
+   Усе «розуміння» зібране тут. Щоб підключити справжню модель, достатньо замінити
+   analyzeRequest / analyzeExpertise на виклик API з тим самим форматом відповіді. */
+function categorize(text, about = '', excluded = []) {
+  const t = norm(text), a = norm(about);
+  const scores = CATEGORIES.filter(c => !excluded.includes(c.id)).map(c => {
+    let s = 0;
+    for (const re of c.res) { s += (t.match(re) || []).length + 0.5 * (a.match(re) || []).length; }
+    return { id: c.id, score: s };
+  }).sort((x, y) => y.score - x.score);
+  const total = scores.reduce((n, x) => n + x.score, 0);
+  const [best, second] = scores;
+  const primary = best && best.score >= 1 ? best.id : null;
+  const secondary = primary && second && second.score >= 1 && second.score >= best.score * 0.5 ? second.id : null;
+  const confidence = primary ? Math.min(97, Math.round((100 * best.score) / (total + 0.5))) : 0;
+  return { primary, secondary, confidence };
+}
+function wordsFor(text, catIds, limit = 6) {
+  const t = norm(text), out = [];
+  for (const id of catIds) {
+    const c = CAT[id]; if (!c) continue;
+    for (const stem of c.kw) {
+      const re = new RegExp('(?<!\\p{L})(' + escRe(stem) + "[\\p{L}'-]*)", 'giu');
+      // різні форми одного слова («договір», «договору») показуємо один раз
+      for (const m of t.matchAll(re)) if (!out.some(w => w.slice(0, 5) === m[1].slice(0, 5))) out.push(m[1]);
+    }
+  }
+  return out.slice(0, limit);
+}
+function analyzeRequest(text, about = '', excluded = []) {
+  const cat = categorize(text, about, excluded);
+  const t = norm(text);
+  const urgency = /(?<!\p{L})(сьогодні|терміново|негайно|якнайшвидше|зараз|до вечора|asap)/iu.test(t) ? 'today'
+    : /(?<!\p{L})(завтра|цього тижня|на тижні|до кінця тижня|до (понеділка|вівторка|середи|четверга|п'ятниці|суботи|неділі))/iu.test(t) ? 'week' : null;
+  let budget = null;
+  const bm = t.match(/(\d[\d\s]{1,6})\s*(?:грн|гривень|гривні|гривня|₴)/u) || t.match(/бюджет\D{0,20}(\d{2,5})/u);
+  if (bm) { const n = parseInt(bm[1].replace(/\s/g, ''), 10); if (n >= 50 && n <= 100000) budget = n; }
+  const clean = String(text).replace(/\s+/g, ' ').trim();
+  const sentences = clean.split(/(?<=[.!?])\s+/).filter(Boolean);
+  const question = trunc(sentences.find(s => s.endsWith('?')) || sentences[0] || clean, 180);
+  return {
+    ...cat,
+    words: cat.primary ? wordsFor(text, [cat.primary, cat.secondary].filter(Boolean)) : [],
+    urgency, budget, question,
+    sensitive: SENSITIVE.test(t),
+  };
+}
+function analyzeExpertise(text) {
+  const cat = categorize(text);
+  return { ...cat, tags: cat.primary ? wordsFor(text, [cat.primary, cat.secondary].filter(Boolean), 8) : [], sensitive: SENSITIVE.test(norm(text)) };
+}
+
+/* ===================== Фахівці, слоти, підбір ===================== */
+const stemOf = w => (w.length > 5 ? w.slice(0, w.length - 2) : w);
+function regToPublic(rec) {
+  return {
+    id: rec.id, name: rec.name, cat: rec.cat, level: rec.level, rating: null, reviews: 0, price: rec.price,
+    position: rec.position, bio: trunc(rec.about, 200), focus: rec.tags.map(w => [stemOf(w), w]),
+    days: rec.days, from: rec.from, to: rec.to, mock: false, verified: rec.status === 'approved', status: rec.status,
+  };
+}
+const allExperts = () => [...MOCK_EXPERTS, ...db.experts.filter(e => ['approved', 'auto_approved'].includes(e.status)).map(regToPublic)];
+function findExpert(id) {
+  const m = MOCK_EXPERTS.find(e => e.id === id); if (m) return m;
+  const r = db.experts.find(e => e.id === id); return r ? regToPublic(r) : null;
+}
+const isBookedAt = (exId, at) => db.bookings.some(b => b.expertId === exId && b.at === at);
+// Слоти фахівця на найближчі дні. Рахуємо в його поясі, групуємо за датою глядача.
+function slotsFor(ex) {
+  const tz = expertTz(ex), now = Date.now(), today = tzParts(now, tz);
+  const horizon = ex.mock ? 3 : 7, all = [];
+  for (let d = 0; d < horizon; d++) {
+    const base = new Date(Date.UTC(today.y, today.m - 1, today.d + d)); // календарна дата фахівця
+    const y = base.getUTCFullYear(), mo = base.getUTCMonth() + 1, da = base.getUTCDate(), wd = (base.getUTCDay() + 6) % 7; // Пн = 0
+    let times;
+    if (ex.mock) {
+      const seed = parseInt(ex.id.slice(1), 10);
+      times = MOCK_TIMES.filter((t, i) => (i + seed + d * 2) % 3 === 0);
+    } else {
+      times = [];
+      if (ex.days.includes(wd)) for (let t = toMin(ex.from); t + 15 <= toMin(ex.to); t += 60) times.push(fromMin(t));
+    }
+    for (const t of times) {
+      const [h, mi] = t.split(':').map(Number);
+      const at = zonedToUtc(y, mo, da, h, mi, tz);
+      if (at > now + 30 * 60000 && !isBookedAt(ex.id, at)) all.push(at);
+    }
+  }
+  all.sort((a, b) => a - b);
+  const todayLocal = new Date(localDate(new Date()) + 'T00:00');
+  const days = [];
+  for (const at of all) {
+    const ds = localDate(new Date(at));
+    let g = days.find(x => x.date === ds);
+    if (!g) days.push(g = { date: ds, label: labelFor(ds), d: Math.round((new Date(ds + 'T00:00') - todayLocal) / 86400000), slots: [] });
+    g.slots.push({ at, time: hhmm(at) });
+  }
+  return days;
+}
+const nextSlot = ex => { for (const g of slotsFor(ex)) if (g.slots.length) return { d: g.d, date: g.date, label: g.label, time: g.slots[0].time, at: g.slots[0].at }; return null; };
+
+function scoreExpert(ex, a, text) {
+  const reasons = [];
+  let s = ex.cat === a.primary ? 60 : ex.cat === a.secondary ? 40 : 15;
+  if (ex.cat === a.primary) reasons.push({ ok: true, text: `Працює з темою «${catName(ex.cat)}»` });
+  else if (ex.cat === a.secondary) reasons.push({ ok: true, text: `Суміжна тема: «${catName(ex.cat)}»` });
+  const t = norm(text);
+  const hits = unique(ex.focus.filter(([stem]) => stemRe(stem, 'iu').test(t)).map(([, label]) => label));
+  if (hits.length) { s += Math.min(24, hits.length * 8); reasons.push({ ok: true, text: `Спеціалізація збігається: ${hits.join(', ')}` }); }
+  const ns = nextSlot(ex);
+  if (a.urgency === 'today') {
+    if (ns && ns.d === 0) { s += 6; reasons.push({ ok: true, text: 'Є вільний час сьогодні' }); }
+    else { s -= 4; reasons.push({ ok: false, text: 'Сьогодні вільного часу немає' }); }
+  }
+  if (a.budget) {
+    if (ex.price <= a.budget) { s += 6; reasons.push({ ok: true, text: `Ціна в межах бюджету (до ${a.budget} грн)` }); }
+    else { s -= 15; reasons.push({ ok: false, text: `Дорожче за ваш бюджет на ${ex.price - a.budget} грн` }); }
+  }
+  if (ex.rating >= 4.8) { s += 4; reasons.push({ ok: true, text: 'Високий рейтинг' }); }
+  else if (ex.rating) s += (ex.rating - 4) * 4;
+  return { match: Math.max(5, Math.min(98, Math.round(s))), reasons, nextSlot: ns };
+}
+function rankExperts(a) {
+  return allExperts()
+    .filter(ex => ex.id !== db.currentUserId && ex.id !== (me() || {}).expertId && (ex.cat === a.primary || ex.cat === a.secondary))
+    .map(ex => ({ ex, ...scoreExpert(ex, a, fullText()) }));
+}
+function expertCardHtml(ex, opts = {}) {
+  const ns = opts.button ? (opts.nextSlot !== undefined ? opts.nextSlot : nextSlot(ex)) : null;
+  return `<div class="card">
+    <div class="row">
+      <div><strong>${esc(ex.name)}</strong><span class="badge">${LEVELS[ex.level]}</span><span class="badge">${ex.verified ? '✓ перевірено' : 'без перевірки (демо)'}</span></div>
+      <div>${opts.match != null ? `<span class="match">${opts.match}% збіг</span> · ` : ''}<strong>${ex.price} грн</strong> / 15 хв</div>
+    </div>
+    <p class="hint">${ex.rating ? `★ ${ex.rating} (${ex.reviews} відгуків)` : 'Новий фахівець, відгуків ще немає'}${ex.position ? ' · ' + esc(ex.position) : ''}</p>
+    <p style="margin:4px 0">${esc(ex.bio)}</p>
+    ${ex.focus.length ? `<p class="hint">Теми: ${unique(ex.focus.map(f => f[1])).map(esc).join(', ')}</p>` : ''}
+    ${opts.reasons ? `<ul class="reasons" aria-label="Чому підходить">${opts.reasons.map(r => `<li class="${r.ok ? '' : 'minus'}">${r.ok ? '✓' : '✗'} ${esc(r.text)}</li>`).join('')}</ul>` : ''}
+    ${opts.button ? `<div class="row"><span class="hint">Найближчий час: ${ns ? `${ns.label}, ${ns.time}` : 'немає вільних слотів'}</span><button class="small" data-id="${ex.id}">Обрати час</button></div>` : ''}
+  </div>`;
+}
+
+/* ===================== Маршрутизація ===================== */
+const ROUTES = [
+  ['home', /^\/?$/], ['profile', /^\/(?:profile|signup)$/], ['login', /^\/login$/], ['ask', /^\/ask$/], ['analysis', /^\/analysis$/],
+  ['expert', /^\/expert\/([\w-]+)$/], ['pay', /^\/pay$/], ['booked', /^\/booked\/([\w-]+)$/], ['session', /^\/session\/([\w-]+)$/],
+  ['summary', /^\/summary\/([\w-]+)$/], ['thanks', /^\/thanks\/([\w-]+)$/], ['cabinet', /^\/cabinet$/],
+  ['becomeExpert', /^\/become-expert$/], ['expertSent', /^\/expert-sent$/],
+];
+// Маршрут живе в адресі (#/…). Якщо середовище не дає змінити адресу (деякі вбудовані перегляди),
+// перемикаємось на маршрут у пам'яті. Сторінки при цьому працюють так само.
+let memRoute = null;
+const currentPath = () => (memRoute !== null ? memRoute : (location.hash.replace(/^#/, '') || '/'));
+function setAddress(path, replace) {
+  if (memRoute === null) {
+    const target = '#' + path;
+    if (location.hash === target) { render(); return; }
+    try { navByApp = true; if (replace) location.replace(target); else location.hash = target; } catch { /* нижче перевіримо */ }
+    if (location.hash === target) return; // адреса змінилась, далі спрацює hashchange
+    navByApp = false;
+    memRoute = path; // адресу змінити не можна, працюємо з пам'яті
+    log('memory_routing');
+  } else memRoute = path;
+  render();
+}
+function parseHash() {
+  const raw = currentPath();
+  const [path, qs] = raw.split('?');
+  for (const [name, re] of ROUTES) { const m = path.match(re); if (m) return { name, param: m[1], query: new URLSearchParams(qs || '') }; }
+  return { name: 'notFound', query: new URLSearchParams() };
+}
+function nav(path) {
+  if (currentPath() === path) { render(); return; }
+  setAddress(path, false);
+}
+function redirect(path, notice) {
+  if (notice) pendingNotice = notice;
+  setAddress(path, true);
+}
+function goBack(path) { nav(path); }
+const safeNext = n => (['ask', 'cabinet', 'become-expert'].includes(n) ? n : '');
+
+window.addEventListener('hashchange', () => {
+  navByApp = false;
+  render();
+});
+
+const CLIENT_STEPS = ['Опис', 'Аналіз AI', 'Фахівець і час', 'Оплата', 'Консультація', 'Підсумок'];
+const STEP_OF = { ask: 0, analysis: 1, expert: 2, pay: 3, booked: 3, session: 4, summary: 5, thanks: 6 };
+
+function render(opts = {}) {
+  const r = parseHash();
+  const now = Date.now();
+  const same = opts.silent && r.name === current;
+  if (!same) {
+    current = r.name; screenEnteredAt = now;
+  }
+  clearInterval(screenInterval); screenInterval = null;
+  renderToken++;
+  const main = $('#main');
+  main.innerHTML = (pendingNotice ? `<div class="notice" role="status">${esc(pendingNotice)}</div>` : '') + '<div id="page"></div>';
+  pendingNotice = null;
+  const page = $('#page');
+  (PAGES[r.name] || PAGES.notFound)(page, r);
+  renderNav(); renderSteps();
+  saveFlow();
+  if (!same) {
+    window.scrollTo(0, 0);
+    const h = page.querySelector('h1, h2');
+    if (h) { h.tabIndex = -1; h.focus({ preventScroll: true }); }
+  }
+}
+function renderNav() {
+  const u = me();
+  const isCur = n => (current === n ? 'aria-current="page"' : '');
+  $('#nav').innerHTML = `
+    <a href="#/ask" ${isCur('ask')}>Поставити питання</a>
+    <a href="#/profile" ${isCur('profile')}>Мій профіль</a>
+    <a href="#/become-expert" ${isCur('becomeExpert')}>Для фахівців</a>
+    <a href="#/cabinet" id="cabLink" data-newtab ${isCur('cabinet')}>Кабінет ↗</a>
+    ${u ? `${linkedOf(u) ? `<span class="role-switch" role="group" aria-label="Режим">Режим: <button type="button" class="small" data-role="expert" aria-pressed="${u.type === 'expert'}">Фахівець</button><button type="button" class="small" data-role="client" aria-pressed="${u.type === 'client'}">Клієнт</button></span>` : ''}<span class="hint">${esc(u.name)} · ${u.type === 'expert' ? 'фахівець' : 'клієнт'}</span><button class="small" id="logoutBtn" type="button">Вийти</button>`
+        : `<a href="#/login" ${isCur('login')}>Увійти</a>`}`;
+  $('#cabLink').onclick = e => { e.preventDefault(); openCabinet(); };
+  if ($('#logoutBtn')) $('#logoutBtn').onclick = () => { logout(); nav('/'); };
+  $('#nav').querySelectorAll('.role-switch button').forEach(b => b.onclick = () => switchRole(b.dataset.role, current === 'cabinet' ? 'cabinet' : null));
+}
+function renderSteps() {
+  const idx = STEP_OF[current];
+  $('#stepsBar').hidden = idx === undefined;
+  if (idx === undefined) return;
+  $('#steps').innerHTML = CLIENT_STEPS.map((l, i) =>
+    `<li class="${i < idx ? 'done' : i === idx ? 'current' : ''}" ${i === idx ? 'aria-current="step"' : ''}>${i + 1}. ${l}</li>`).join('');
+}
+function logout() { log('logout'); db.currentUserId = null; db.expertSession = null; commit(); flow = freshFlow(); }
+// Помилка 4: пов'язана анкета (для фахівця це клієнт, для клієнта фахівець)
+function linkedOf(u) {
+  if (!u) return null;
+  const id = u.type === 'expert' ? u.clientId : u.expertId;
+  return (id && db.users.find(x => x.id === id)) || null;
+}
+// Перемикання режиму без повторного входу. У фахівця без пароля пускаємо, лише якщо він уже входив як фахівець у цьому браузері.
+function switchRole(role, then) {
+  const u = me(), other = linkedOf(u);
+  if (!u || !other || u.type === role) return;
+  if (role === 'expert' && db.expertSession !== other.id) {
+    log('switch_needs_password');
+    return nav(`/login?role=expert&next=${then === 'ask' ? 'ask' : 'cabinet'}&email=${encodeURIComponent(other.email)}`);
+  }
+  db.currentUserId = other.id; commit();
+  log('switch_role', role);
+  if (then) nav('/' + then); else render({ silent: true });
+}
+function openCabinet() {
+  // Кабінет відкривається в новій вкладці; дані між вкладками спільні через localStorage
+  const url = location.href.split('#')[0] + '#/cabinet';
+  let w = null;
+  try { w = window.open(url, '_blank'); } catch { w = null; }
+  log('open_cabinet', w ? 'нова вкладка' : 'ця вкладка (нові вкладки заблоковані)');
+  if (!w) {
+    pendingNotice = 'Цей перегляд не дозволяє відкривати нові вкладки, тому кабінет відкрито тут. Відкрийте файл у браузері, і кабінет відкриватиметься в окремій вкладці.';
+    nav('/cabinet');
+  }
+}
+
+// Вбудований перегляд: iframe із sandbox без allow-forms: подія submit там не спрацьовує.
+// Тому кнопки форм type="button", а Enter (і Ctrl+Enter у полі опису) обробляємо самі.
+function bindSubmit(form, handler) {
+  form.addEventListener('submit', e => e.preventDefault());
+  form.querySelectorAll('[data-submit]').forEach(b => b.addEventListener('click', () => handler()));
+  form.addEventListener('keydown', e => {
+    if (e.key !== 'Enter' || e.isComposing) return;
+    const single = e.target.matches('input[type=text], input[type=email], input[type=tel], input[type=password], input[type=number], input[type=url]');
+    const ctrlInTextarea = e.target.matches('textarea') && (e.ctrlKey || e.metaKey);
+    if (single || ctrlInTextarea) { e.preventDefault(); handler(); }
+  });
+}
+
+/* ===================== Сторінки ===================== */
+const PAGES = {};
+
+PAGES.home = m => {
+  const experts = allExperts();
+  const active = CATEGORIES.filter(c => experts.some(e => e.cat === c.id));
+  m.innerHTML = `
+    <h1>Коротка консультація з потрібним фахівцем</h1>
+    <p>10–15 хвилин розмови і конкретна відповідь. Без пошуку через знайомих і без оплати за цілу годину.</p>
+    <div class="actions"><button class="primary" id="cta">Поставити питання</button><button id="ctaExpert">Я фахівець</button></div>
+    <h2 style="margin-top:24px">Як це працює</h2>
+    <ol class="how">
+      <li><strong>Опишіть питання своїми словами.</strong> Без анкет і списків: просто розкажіть, що сталося.</li>
+      <li><strong>AI підбере фахівців.</strong> Визначить тему і покаже, чому кожен фахівець вам підходить.</li>
+      <li><strong>Оберіть час і оплатіть.</strong> Ціну встановлює фахівець, ви бачите її одразу.</li>
+      <li><strong>Поговоріть 15 хвилин.</strong> Відеозв'язок у браузері, після розмови підсумок у кабінеті.</li>
+    </ol>
+    <div class="grid">
+      <div class="card"><h3>Зараз на платформі</h3><p>${experts.length} перевірених фахівців у ${active.length} напрямах. Нові напрями з'являються разом із фахівцями.</p></div>
+      <div class="card"><h3>Приватність</h3><p>Розмова не записується. Опис питання бачить лише обраний фахівець.</p></div>
+      <div class="card"><h3>Для фахівців</h3><p>Заробляйте на коротких консультаціях без пошуку клієнтів. Ціну встановлюєте самі, комісія платформи 20%.</p><a href="#/become-expert">Стати фахівцем →</a></div>
+    </div>
+    <p class="hint" style="margin-top:12px">Медичні та психологічні консультації на першому етапі не проводимо.</p>`;
+  $('#cta', m).onclick = () => { log('cta_ask'); nav('/ask'); };
+  $('#ctaExpert', m).onclick = () => { log('cta_expert'); nav('/become-expert'); };
+};
+
+/* ---------- Мій профіль: окрема сторінка; дані з неї автоматично підставляються в заявку ---------- */
+PAGES.profile = (m, r) => {
+  const next = safeNext(r.query.get('next'));
+  const u = me();
+  const isNew = !u;
+  const nextLabel = { ask: 'Зберегти і повернутися до заявки', cabinet: 'Зберегти і відкрити кабінет', 'become-expert': 'Зберегти і продовжити' }[next];
+  m.innerHTML = `
+    <h2>Мій профіль</h2>
+    <p class="hint">${isNew
+      ? 'Розкажіть коротко про себе. Ці дані автоматично підставлятимуться в кожну заявку, тож заповнити їх треба лише один раз.'
+      : 'Ці дані автоматично підставляються в кожну вашу заявку.'}</p>
+    ${next === 'ask' ? '<div class="notice">Вашу заявку збережено. Після заповнення профілю ви повернетеся до неї.</div>' : ''}
+    <form id="f" novalidate>
+      <label for="name">Як до вас звертатися?</label>
+      <input id="name" type="text" autocomplete="given-name" value="${esc(u ? u.name : '')}">
+      <div id="nameErr" class="error"></div>
+      <label for="email">Електронна пошта</label>
+      <input id="email" type="email" autocomplete="email" inputmode="email" value="${esc(u ? u.email : '')}">
+      <p class="hint">Сюди прийдуть підтвердження бронювання і підсумок консультації.</p>
+      <div id="emailErr" class="error"></div>
+      <label for="about">Чим ви займаєтесь? <span class="hint">(необов'язково)</span></label>
+      <input id="about" type="text" value="${esc(u && u.about ? u.about : '')}">
+      <p class="hint">Допомагає AI точніше підібрати фахівця. Фахівець побачить це разом із заявкою.</p>
+      ${isNew ? '<p class="hint">Зберігаючи профіль, ви погоджуєтесь з умовами користування. Вхід без пароля, за посиланням на пошту (у прототипі імітується).</p>' : ''}
+      <div id="savedMsg" class="ok" hidden role="status">Профіль збережено ✓</div>
+      <div class="actions"><button class="primary" type="button" data-submit>${nextLabel || 'Зберегти профіль'}</button></div>
+    </form>
+    ${isNew ? `<p>Вже заповнювали профіль раніше? <a href="#/login?next=${next}">Увійти</a></p>` : ''}`;
+  bindSubmit($('#f', m), () => {
+    const name = $('#name', m), email = $('#email', m);
+    const nm = name.value.trim(), em = email.value.trim();
+    const errs = [], first = [];
+    if (!nm) { setErr('nameErr', 'Вкажіть, як до вас звертатися', name); errs.push('name'); first.push(name); } else setErr('nameErr', '', name);
+    const taken = db.users.some(x => x.type === (u ? u.type : 'client') && x.id !== (u && u.id) && x.email.toLowerCase() === em.toLowerCase());
+    if (!EMAIL_RE.test(em)) { setErr('emailErr', 'Перевірте адресу пошти', email); errs.push('email'); first.push(email); }
+    else if (taken) { setErr('emailErr', 'Профіль з такою поштою вже є. Увійдіть за посиланням нижче.', email); errs.push('email_taken'); first.push(email); }
+    else setErr('emailErr', '', email);
+    if (errs.length) return fail(errs, first, 'профіль');
+    const about = $('#about', m).value.trim();
+    if (u) {
+      Object.assign(u, { name: nm, email: em, about });
+      const rec = myExpertRecord(); if (rec) Object.assign(rec, { name: nm, email: em });
+      log('profile_updated');
+    } else {
+      const user = { id: uid('u'), type: 'client', name: nm, email: em, about, createdAt: Date.now() };
+      db.users.push(user); db.currentUserId = user.id;
+      log('profile_created');
+    }
+    commit();
+    if (next) return nav('/' + next);
+    renderNav();
+    $('#savedMsg', m).hidden = false;
+  });
+};
+
+// Фахівець без пароля задає свій. Лист для встановлення пароля в прототипі імітується, як і вхід клієнта.
+function showSetPassword(m, u, next) {
+  m.innerHTML = `
+    <h2>Задайте пароль</h2>
+    <p>Для акаунта фахівця ${esc(u.email)} пароль ще не задано.</p>
+    <p class="hint">У справжньому сервісі сюди веде посилання з листа. У прототипі лист імітується, тому задайте пароль тут.</p>
+    <form id="sp" novalidate>
+      <label for="np1">Новий пароль</label>
+      <input id="np1" type="password" autocomplete="new-password">
+      <p class="hint">Щонайменше 8 символів, літери й цифри.</p>
+      <div id="np1Err" class="error"></div>
+      <label for="np2">Повторіть пароль</label>
+      <input id="np2" type="password" autocomplete="new-password">
+      <div id="np2Err" class="error"></div>
+      <div class="actions"><button class="primary" type="button" data-submit>Зберегти і увійти</button></div>
+    </form>`;
+  const f = $('#sp', m); $('#np1', m).focus();
+  bindSubmit(f, () => {
+    const a = $('#np1', m), b = $('#np2', m), p1 = a.value, p2 = b.value;
+    const strong = p1.length >= 8 && /\p{L}/u.test(p1) && /\d/.test(p1);
+    setErr('np1Err', strong ? '' : 'Пароль має містити щонайменше 8 символів, літери й цифри', a);
+    setErr('np2Err', !strong || p1 === p2 ? '' : 'Паролі не збігаються', b);
+    if (!strong) return fail(['np1'], [a], 'новий пароль');
+    if (p1 !== p2) return fail(['np2'], [b], 'новий пароль');
+    u.pass = p1;
+    const ex = db.experts.find(e => e.id === u.id); if (ex) ex.pass = p1;
+    linkClientFor(db, u);
+    db.expertSession = u.id;
+    db.currentUserId = u.id; commit(); flow = freshFlow();
+    log('password_set');
+    nav('/' + (next || 'cabinet'));
+  });
+}
+
+PAGES.login = (m, r) => {
+  const next = safeNext(r.query.get('next'));
+  const defRole = r.query.get('role') === 'expert' ? 'expert' : 'client';
+  m.innerHTML = `
+    <h2>Вхід</h2>
+    <p class="hint">Вкажіть пошту, з якою реєструвалися. Для клієнтів вхід без пароля (імітація посилання на пошту), для фахівців потрібен пароль.</p>
+    <form id="f" novalidate>
+      <fieldset class="radio-row">
+        <legend>Увійти як:</legend>
+        <label><input type="radio" name="loginRole" value="client" ${defRole === 'client' ? 'checked' : ''}> Клієнт</label>
+        <label><input type="radio" name="loginRole" value="expert" ${defRole === 'expert' ? 'checked' : ''}> Фахівець</label>
+      </fieldset>
+      <label for="email">Електронна пошта</label>
+      <input id="email" type="email" autocomplete="email" value="${esc(r.query.get('email') || '')}">
+      <div id="emailErr" class="error"></div>
+      <div id="passBox" ${defRole === 'expert' ? '' : 'hidden'}>
+        <label for="pass">Пароль фахівця</label>
+        <input id="pass" type="password" autocomplete="current-password">
+        <div id="passErr" class="error"></div>
+      </div>
+      <div class="actions"><button class="primary" type="button" data-submit>Увійти</button></div>
+    </form>
+    <p>Ще не заповнювали профіль? <a href="#/profile?next=${next}">Заповнити профіль</a> або <a href="#/become-expert">стати фахівцем</a>.</p>`;
+
+  const passBox = $('#passBox', m);
+  m.querySelectorAll('input[name=loginRole]').forEach(radio => {
+    radio.onchange = () => {
+      passBox.hidden = radio.value !== 'expert' || !radio.checked;
+      setErr('passErr', '');
+    };
+  });
+
+  bindSubmit($('#f', m), () => {
+    const email = $('#email', m);
+    const pass = $('#pass', m);
+    const role = (m.querySelector('input[name=loginRole]:checked') || {}).value || 'client';
+    const em = email.value.trim().toLowerCase();
+    const pw = pass.value;
+    setErr('emailErr', '', email);
+    setErr('passErr', '', pass);
+
+    if (!em) {
+      setErr('emailErr', 'Вкажіть адресу пошти', email);
+      return fail(['email'], [email], 'вхід');
+    }
+
+    const matching = db.users.filter(x => x.email.toLowerCase() === em);
+    if (!matching.length) {
+      setErr('emailErr', EMAIL_RE.test(em) ? 'Акаунт з такою поштою не знайдено' : 'Перевірте адресу пошти', email);
+      return fail(['login'], [email], 'вхід');
+    }
+
+    let u = matching.find(x => x.type === role);
+    if (!u) {
+      if (role === 'expert') {
+        setErr('emailErr', 'Для цієї пошти немає акаунта фахівця. Якщо ви клієнт, оберіть «Клієнт».', email);
+      } else {
+        setErr('emailErr', 'Для цієї пошти немає акаунта клієнта. Якщо ви фахівець, оберіть «Фахівець».', email);
+      }
+      return fail(['role'], [email], 'вхід');
+    }
+
+    if (u.type === 'expert' && !u.pass) {
+      // Пароля ще немає: не пускаємо з будь-яким паролем, а пропонуємо задати свій
+      log('login_set_password');
+      return showSetPassword(m, u, next);
+    }
+
+    if (u.type === 'expert') {
+      if (!pw) {
+        setErr('passErr', 'Введіть пароль фахівця', pass);
+        return fail(['pass'], [pass], 'вхід');
+      }
+      if (pw !== u.pass) {
+        setErr('passErr', 'Невірний пароль', pass);
+        return fail(['pass'], [pass], 'вхід');
+      }
+    }
+
+    if (u.type === 'expert') linkClientFor(db, u);
+    db.expertSession = u.type === 'expert' ? u.id : null; // клієнтський вхід без пароля не відкриває режим фахівця
+    db.currentUserId = u.id; commit(); flow = freshFlow();
+    log('login', u.type);
+    nav('/' + next);
+  });
+};
+
+PAGES.ask = m => {
+  const me0 = me();
+  // Помилка 4: фахівець подає заявку від своєї клієнтської анкети
+  const u = me0 && me0.type === 'expert' ? (linkedOf(me0) || me0) : me0;
+  // Дані про людину беруться з профілю автоматично
+  const who = u
+    ? `<div class="card" id="whoCard"><div class="row"><span><strong>Заявка від:</strong> ${esc(u.name)}</span><a href="#/profile">Змінити профіль</a></div>
+        <p class="hint" style="margin:0">${esc(u.email)}${u.about ? ' · ' + esc(u.about) : ''}</p>
+        ${me0.type === 'expert' ? '<p class="hint" style="margin:4px 0 0">Ви в режимі фахівця. Заявка піде від вашої анкети клієнта, і ви перейдете в режим клієнта. Повернутися можна в меню.</p>' : ''}</div>`
+    : '';
+  m.innerHTML = `
+    <h2>Опишіть своє питання</h2>
+    ${who}
+    <p class="hint">Своїми словами: що сталося і яку відповідь хочете отримати після розмови. Якщо це важливо, напишіть, коли потрібна консультація і який у вас бюджет.</p>
+    <form id="f" novalidate>
+      <label for="text">Ваше питання</label>
+      <textarea id="text" maxlength="2000" rows="7">${esc(flow.draft != null ? flow.draft : fullText())}</textarea>
+      <div class="row"><span id="textErr" class="error"></span><span class="hint" id="count"></span></div>
+      <p class="hint">Опис побачить лише фахівець, якого ви оберете.</p>
+      <div id="profileErr" class="error" role="alert"></div>
+      <div class="actions"><button class="primary" type="button" data-submit>Знайти фахівця</button></div>
+    </form>`;
+  const form = $('#f', m), ta = $('#text', m), count = $('#count', m);
+  const MIN = 30;
+  const upd = () => { const n = ta.value.trim().length; count.textContent = n < MIN ? `${n} / ще ${MIN - n} симв.` : `${n} симв. ✓`; };
+  upd();
+  // Чернетка зберігається, щоб після заповнення профілю текст не загубився
+  ta.addEventListener('input', () => { upd(); flow.draft = ta.value; saveFlow(); });
+  bindSubmit(form, () => {
+    const v = ta.value.trim();
+    if (v.length < MIN) { setErr('textErr', `Опишіть трохи детальніше: щонайменше ${MIN} символів`, ta); return fail(['text'], [ta], 'опис'); }
+    setErr('textErr', '', ta);
+    // Без профілю заявку не приймаємо: показуємо помилку з посиланням на профіль
+    if (!me()) {
+      flow.draft = ta.value;
+      $('#profileErr', m).innerHTML = 'Ми не знаємо хто ви, <a href="#/profile?next=ask" id="profileLink">заповніть свій профіль</a>';
+      return fail(['no_profile'], [$('#profileLink', m)], 'заявка');
+    }
+    $('#profileErr', m).textContent = '';
+    const cur = me();
+    if (cur.type === 'expert' && linkedOf(cur)) { db.currentUserId = linkedOf(cur).id; commit(); log('switch_role', 'client'); }
+    if (v !== fullText()) { const ui = flow.ui; flow = freshFlow(); flow.ui = ui; flow.text = v; }
+    flow.draft = null;
+    nav('/analysis');
+  });
+};
+
+PAGES.analysis = m => {
+  if (!me() || !flow.text) return redirect('/ask');
+  const key = fullText() + '|' + flow.excluded.join(',');
+  if (flow.analysis && flow.analysisKey === key) return showAnalysis(m);
+  m.innerHTML = `<h2>Аналізуємо запит</h2><p role="status"><span class="spinner" aria-hidden="true"></span>AI читає ваш опис і шукає відповідних фахівців…</p>`;
+  const token = renderToken;
+  setTimeout(() => {
+    if (token !== renderToken) return; // користувач уже пішов з екрана
+    flow.analysis = analyzeRequest(fullText(), (me() || {}).about || '', flow.excluded);
+    flow.analysisKey = key;
+    flow.clarifyMode = null;
+    saveFlow();
+    const a = flow.analysis;
+    log('ai_analysis', `тема=${a.primary || 'немає'}${a.secondary ? '+' + a.secondary : ''}, впевненість ${a.confidence}%, коли=${a.urgency || 'немає'}, бюджет=${a.budget || 'немає'}${a.sensitive ? ', чутлива тема' : ''}`);
+    showAnalysis(m);
+    const h = m.querySelector('h2'); if (h) { h.tabIndex = -1; h.focus(); }
+  }, 1100);
+};
+
+function showAnalysis(m) {
+  const a = flow.analysis;
+
+  // 1. Чутлива тема (медицина/психологія): не консультуємо в першій версії
+  if (a.sensitive && !flow.override) {
+    log('sensitive_blocked');
+    m.innerHTML = `
+      <h2>Цю тему поки не консультуємо</h2>
+      <div class="warn">AI помітив, що питання може стосуватися здоров'я або психологічного стану. На першому етапі таких консультацій немає: там інша відповідальність. Будь ласка, зверніться до лікаря або психолога напряму.</div>
+      <div class="actions"><button id="edit">Змінити опис</button><button id="override">Питання не медичне, продовжити</button></div>`;
+    $('#edit', m).onclick = () => goBack('/ask');
+    $('#override', m).onclick = () => { flow.override = true; log('not_medical_override'); showAnalysis(m); };
+    return;
+  }
+
+  // 2. AI не впевнений або користувач сказав, що AI помилився: уточнювальне питання (вільний текст)
+  if (!a.primary || flow.clarifyMode) {
+    const wrong = flow.clarifyMode === 'wrong';
+    const msg = wrong
+      ? 'Вибачте, що не влучив. Розкажіть, будь ласка, своїми словами, до якої сфери належить питання і хто, на вашу думку, міг би допомогти.'
+      : 'Я не впевнений, до якого фахівця вас направити. Розкажіть, будь ласка, детальніше: що саме сталося, у якій сфері це питання і яку відповідь ви хочете отримати?';
+    m.innerHTML = `
+      <h2>Потрібно трохи більше деталей</h2>
+      <div class="card"><p style="margin:0"><strong>AI:</strong> ${msg}</p></div>
+      <form id="cf" novalidate>
+        <label for="clar">Ваше уточнення</label>
+        <textarea id="clar" rows="4" maxlength="1000"></textarea>
+        <div id="clarErr" class="error"></div>
+        <div class="actions"><button type="button" id="edit">Переписати опис повністю</button><button class="primary" type="button" data-submit>Надіслати уточнення</button></div>
+      </form>`;
+    $('#edit', m).onclick = () => goBack('/ask');
+    bindSubmit($('#cf', m), () => {
+      const ta = $('#clar', m), v = ta.value.trim();
+      if (v.length < 10) { setErr('clarErr', 'Напишіть хоча б одне речення', ta); return fail(['clarification'], [ta], 'уточнення'); }
+      if (wrong && a.primary) flow.excluded.push(a.primary);
+      flow.clarifications.push(v);
+      flow.analysis = null; flow.clarifyMode = null;
+      log('ai_clarification', wrong ? 'після «AI помилився»' : 'AI не визначив тему');
+      render({ silent: true });
+    });
+    return;
+  }
+
+  // 3. Результат: як AI зрозумів запит + підібрані фахівці
+  const ranked = rankExperts(a);
+  const primaryList = ranked.filter(x => x.ex.cat === a.primary);
+  m.innerHTML = `
+    <h2>Підібрані фахівці</h2>
+    <div class="card">
+      <h3 style="margin-top:0">Як AI зрозумів ваш запит</h3>
+      <table>
+        <tr><td>Тема</td><td>${esc(catName(a.primary))} <span class="hint">· впевненість ${a.confidence}%</span>${a.secondary ? `<br><span class="hint">Також стосується: ${esc(catName(a.secondary))}</span>` : ''}</td></tr>
+        <tr><td>Головне питання</td><td>${esc(a.question)}</td></tr>
+        ${a.words.length ? `<tr><td>Ключові слова</td><td>${a.words.map(esc).join(', ')}</td></tr>` : ''}
+        <tr><td>Коли</td><td>${a.urgency ? URGENCY_LABEL[a.urgency] : 'Не вказано, показуємо найближчий час'}</td></tr>
+        <tr><td>Бюджет</td><td>${a.budget ? `до ${a.budget} грн` : 'Не вказано'}</td></tr>
+      </table>
+      <div class="actions"><button class="small" id="edit">Змінити опис</button><button class="small" id="wrong">AI неправильно зрозумів тему</button></div>
+    </div>
+    ${primaryList.length ? '' : `
+      <div class="warn" id="wait">
+        Поки немає фахівців з теми «${esc(catName(a.primary))}». Ми саме шукаємо їх і можемо написати вам, щойно хтось з'явиться.
+        <div class="actions" style="margin-top:8px"><button class="small" id="waitBtn" ${flow.waitlisted ? 'disabled' : ''}>${flow.waitlisted ? 'Ви в списку очікування ✓' : 'Повідомити мене'}</button></div>
+      </div>`}
+    ${ranked.length ? `
+      <div>
+        <label class="inline">Рівень
+          <select id="lvl"><option value="">Усі</option>${Object.entries(LEVELS).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select>
+        </label>
+        <label class="inline">Сортувати
+          <select id="sort"><option value="match">Найкращий збіг</option><option value="price">Спочатку дешевші</option><option value="rating">Найвищий рейтинг</option><option value="soon">Найближчий час</option></select>
+        </label>
+      </div>
+      ${!primaryList.length ? '<p class="hint">Можуть допомогти із суміжної теми:</p>' : ''}
+      <div id="list"></div>` : ''}`;
+  $('#edit', m).onclick = () => goBack('/ask');
+  $('#wrong', m).onclick = () => { flow.clarifyMode = 'wrong'; showAnalysis(m); };
+  if ($('#waitBtn', m)) $('#waitBtn', m).onclick = e => { flow.waitlisted = true; log('waitlist', a.primary); e.target.disabled = true; e.target.textContent = 'Ви в списку очікування ✓'; };
+  if (!ranked.length) return;
+
+  const ui = flow.ui;
+  $('#lvl', m).value = ui.lvl; $('#sort', m).value = ui.sort;
+  const draw = () => {
+    let list = ranked.filter(x => !ui.lvl || x.ex.level === ui.lvl);
+    const soon = x => (x.nextSlot ? x.nextSlot.at : Infinity);
+    const sorters = { match: (p, q) => q.match - p.match, price: (p, q) => p.ex.price - q.ex.price, rating: (p, q) => (q.ex.rating || 0) - (p.ex.rating || 0), soon: (p, q) => soon(p) - soon(q) };
+    list = [...list].sort(sorters[ui.sort]);
+    $('#list', m).innerHTML = list.length
+      ? list.map(x => expertCardHtml(x.ex, { match: x.match, reasons: x.reasons, button: true, nextSlot: x.nextSlot })).join('')
+      : '<p>Нікого не знайдено з таким фільтром.</p>';
+    $('#list', m).querySelectorAll('button[data-id]').forEach(b => b.onclick = () => {
+      if (flow.expertId !== b.dataset.id) flow.slot = null;
+      flow.expertId = b.dataset.id;
+      log('open_expert', b.dataset.id);
+      nav('/expert/' + b.dataset.id);
+    });
+  };
+  $('#lvl', m).onchange = () => { ui.lvl = $('#lvl', m).value; log('filter_level', ui.lvl || 'all'); draw(); };
+  $('#sort', m).onchange = () => { ui.sort = $('#sort', m).value; log('sort', ui.sort); draw(); };
+  draw();
+}
+
+PAGES.expert = (m, r) => {
+  const ex = findExpert(r.param);
+  if (!ex) return PAGES.notFound(m);
+  if (!flow.analysis || !flow.analysis.primary) return redirect('/ask', 'Спершу опишіть питання, щоб ми показали, чи підходить фахівець.');
+  const sc = scoreExpert(ex, flow.analysis, fullText());
+  const days = slotsFor(ex);
+  const reviews = ex.mock ? SAMPLE_REVIEWS[parseInt(ex.id.slice(1), 10) % SAMPLE_REVIEWS.length] : [];
+  m.innerHTML = `
+    <h2>${esc(ex.name)}</h2>
+    <p><span class="badge">${LEVELS[ex.level]}</span><span class="badge">${ex.verified ? '✓ перевірено' : 'без перевірки (демо)'}</span> ${ex.rating ? `★ ${ex.rating} (${ex.reviews} відгуків)` : '<span class="hint">Новий фахівець</span>'}</p>
+    ${ex.position ? `<p class="hint">${esc(ex.position)}</p>` : ''}
+    <p>${esc(ex.bio)}</p>
+    <p><strong>${ex.price} грн</strong> за 15 хвилин. Ціну встановлює фахівець.</p>
+    <div class="card"><strong>Чому підходить (${sc.match}% збіг)</strong>
+      <ul class="reasons">${sc.reasons.map(x => `<li class="${x.ok ? '' : 'minus'}">${x.ok ? '✓' : '✗'} ${esc(x.text)}</li>`).join('')}</ul>
+    </div>
+    <h3>Відгуки</h3>
+    ${reviews.length ? reviews.map(t => `<div class="card hint">«${esc(t)}»</div>`).join('') : '<p class="hint">Відгуків поки немає.</p>'}
+    <h3>Оберіть час</h3>
+    <p class="hint" id="tzNote">Час показано у вашому часовому поясі, ${utcLabel(VIEW_TZ)}.${tzOffsetMin(Date.now(), expertTz(ex)) !== tzOffsetMin(Date.now(), VIEW_TZ) ? ` У фахівця інший пояс, ${utcLabel(expertTz(ex))}, ми вже все перерахували.` : ''} Консультація 15 хвилин.</p>
+    ${days.length ? days.map(day => `
+      <div><strong>${esc(day.label)}</strong></div>
+      <div class="slots">${day.slots.map(sl => `<button type="button" class="slot small" data-at="${sl.at}" aria-pressed="false">${sl.time}</button>`).join('')}</div>`).join('') : '<p>Найближчого тижня вільного часу немає.</p>'}
+    <div id="slotErr" class="error"></div>
+    <div class="actions"><button id="back">Назад до підбору</button><button class="primary" id="next">Продовжити</button></div>`;
+  $('#back', m).onclick = () => goBack('/analysis');
+  const slotBtns = [...m.querySelectorAll('.slot')];
+  if (flow.slot && flow.slot.at == null) flow.slot = null; // чернетка зі старої версії
+  if (flow.slot && flow.expertId === ex.id) {
+    const sel = slotBtns.find(b => +b.dataset.at === flow.slot.at);
+    if (sel) sel.setAttribute('aria-pressed', 'true'); else flow.slot = null;
+  }
+  slotBtns.forEach(b => b.onclick = () => {
+    slotBtns.forEach(x => x.setAttribute('aria-pressed', 'false'));
+    b.setAttribute('aria-pressed', 'true');
+    flow.expertId = ex.id;
+    flow.slot = { at: +b.dataset.at };
+    saveFlow();
+    setErr('slotErr', '');
+    log('slot_selected', whenText(+b.dataset.at));
+  });
+  $('#next', m).onclick = () => {
+    if (!flow.slot || flow.expertId !== ex.id) { setErr('slotErr', 'Оберіть зручний час вище'); return fail(['slot'], [], 'вибір часу'); }
+    nav('/pay');
+  };
+};
+
+PAGES.pay = m => {
+  const ex = flow.expertId && findExpert(flow.expertId);
+  if (!me() || !ex || !flow.slot || flow.slot.at == null || !flow.analysis) return redirect('/ask');
+  const a = flow.analysis;
+  m.innerHTML = `
+    <h2>Підтвердження і оплата</h2>
+    <table>
+      <tr><td>Фахівець</td><td>${esc(ex.name)} (${LEVELS[ex.level]})</td></tr>
+      <tr><td>Коли</td><td>${esc(whenText(flow.slot.at))} (ваш час, ${utcLabel(VIEW_TZ)}) · 15 хв · відеозв'язок у браузері</td></tr>
+      <tr><td>Ваше питання</td><td>${esc(a.question)}</td></tr>
+      <tr><td>До сплати</td><td><strong>${ex.price} грн</strong></td></tr>
+    </table>
+    <p class="hint">Фахівець побачить ваш опис ситуації до початку консультації.</p>
+    <fieldset class="radio-col">
+      <legend>Приватність</legend>
+      <label><input type="checkbox" disabled> Записати сесію (з'явиться згодом, за окрему плату)</label>
+      <p class="hint">Запис вимкнений. Зберігається лише короткий текстовий підсумок, який бачите ви.</p>
+    </fieldset>
+    <label class="inline" style="display:flex;gap:6px;align-items:flex-start;margin-top:12px">
+      <input type="checkbox" id="agree">
+      <span>Розумію: консультація є порадою фахівця, а не офіційним висновком. Погоджуюсь з умовами користування.</span>
+    </label>
+    <a href="#" id="terms" aria-expanded="false" aria-controls="termsText">Прочитати умови</a>
+    <div id="termsText" class="card hint" hidden>Фахівець відповідає за зміст консультації. Платформа відповідає за підбір, оплату і зв'язок. Рішення ухвалює клієнт. Якщо консультація не відбулася з вини фахівця, гроші повертаються.</div>
+    <div id="agreeErr" class="error"></div>
+    <div class="actions"><button id="back">Змінити час</button><button class="primary" id="payBtn">Оплатити ${ex.price} грн</button></div>
+    <p class="hint">Прототип: оплата імітується, дані картки не запитуються.</p>`;
+  $('#back', m).onclick = () => goBack('/expert/' + ex.id);
+  $('#terms', m).onclick = e => {
+    e.preventDefault();
+    const box = $('#termsText', m); box.hidden = !box.hidden;
+    e.target.setAttribute('aria-expanded', String(!box.hidden));
+    if (!box.hidden) log('open_terms');
+  };
+  $('#agree', m).onchange = e => { if (e.target.checked) setErr('agreeErr', ''); };
+  $('#payBtn', m).onclick = () => {
+    if (!$('#agree', m).checked) { setErr('agreeErr', 'Позначте згоду з умовами, щоб продовжити'); return fail(['agree'], [$('#agree', m)], 'оплата'); }
+    if (isBookedAt(ex.id, flow.slot.at)) {
+      flow.slot = null; pendingNotice = 'Цей час щойно зайняли. Оберіть, будь ласка, інший.';
+      log('slot_taken'); return nav('/expert/' + ex.id);
+    }
+    const btn = $('#payBtn', m);
+    btn.disabled = true; btn.textContent = 'Обробка оплати…';
+    $('#back', m).disabled = true; $('#agree', m).disabled = true;
+    log('pay_click');
+    const token = renderToken;
+    setTimeout(() => {
+      if (token !== renderToken) return;
+      const u = me();
+      const b = {
+        id: uid('b'), clientId: u.id, clientName: u.name, expertId: ex.id, expertName: ex.name, expertMock: !!ex.mock,
+        price: ex.price, at: flow.slot.at, status: 'booked', createdAt: Date.now(),
+        request: { text: fullText(), question: a.question, cat: a.primary },
+      };
+      db.bookings.push(b); commit();
+
+      flow = freshFlow();
+      redirect('/booked/' + b.id);
+    }, 900);
+  };
+};
+
+const myBooking = id => db.bookings.find(b => b.id === id && b.clientId === db.currentUserId) || null;
+
+PAGES.booked = (m, r) => {
+  const b = myBooking(r.param); if (!b) return PAGES.notFound(m);
+  m.innerHTML = `
+    <h2>Заброньовано ✓</h2>
+    <div class="ok">${esc(b.clientName)}, ви записані до <strong>${esc(b.expertName)}</strong>: ${esc(whenText(b.at))} (ваш час, ${utcLabel(VIEW_TZ)}).</div>
+    <p>Консультація з'явилася у вашому кабінеті. Посилання на відеозв'язок відкриється там за 5 хвилин до початку, нагадування прийде на пошту (імітація).</p>
+    <div class="actions">
+      <button id="cab">Відкрити кабінет ↗</button>
+      <button id="cal">Додати в календар</button>
+      <button class="primary" id="join">Перейти до консультації</button>
+    </div>
+    <p class="hint">Прототип: перехід до сесії доступний одразу.</p>`;
+  $('#cab', m).onclick = openCabinet;
+  $('#cal', m).onclick = e => { log('add_to_calendar'); e.target.textContent = 'Додано ✓'; e.target.disabled = true; };
+  $('#join', m).onclick = () => nav('/session/' + b.id);
+};
+
+PAGES.session = (m, r) => {
+  const b = myBooking(r.param); if (!b) return PAGES.notFound(m);
+  if (b.status === 'done') return redirect('/summary/' + b.id);
+  const started = Date.now();
+  m.innerHTML = `
+    <h2>Консультація</h2>
+    <div class="video">
+      <div>📹 ${esc(b.expertName)}</div>
+      <div id="timer">0:00 / 15:00</div>
+      <div class="hint" style="color:#aaa">Імітація відеозв'язку · запис вимкнено</div>
+    </div>
+    <div class="card"><strong>Ваше питання:</strong> ${esc(b.request.question)}</div>
+    <div class="actions"><button id="mic" aria-pressed="false">Вимкнути мікрофон</button><button class="primary" id="end">Завершити консультацію</button></div>
+    <div id="endAsk" class="warn" hidden>
+      Завершити консультацію зараз?
+      <div class="actions" style="margin-top:8px"><button class="primary" id="endConfirm">Так, завершити</button><button id="endCancel">Продовжити розмову</button></div>
+    </div>`;
+  screenInterval = setInterval(() => { const el = $('#timer', m); if (el) el.textContent = `${fmt(Date.now() - started)} / 15:00`; }, 1000);
+  $('#mic', m).onclick = e => {
+    const off = e.target.getAttribute('aria-pressed') !== 'true';
+    e.target.setAttribute('aria-pressed', String(off));
+    e.target.textContent = off ? 'Увімкнути мікрофон' : 'Вимкнути мікрофон';
+    log('mic', off ? 'off' : 'on');
+  };
+  // Підтвердження на сторінці: confirm() у вбудованому перегляді заблокований
+  $('#end', m).onclick = () => { $('#endAsk', m).hidden = false; $('#endConfirm', m).focus(); log('end_ask'); };
+  $('#endCancel', m).onclick = () => { $('#endAsk', m).hidden = true; log('end_cancel'); };
+  $('#endConfirm', m).onclick = () => {
+    b.status = 'done'; b.endedAt = Date.now();
+    // Демо-фахівці «пишуть» підсумок одразу; справжні пишуть у своєму кабінеті
+    if (b.expertMock && !b.summaryText) b.summaryText = (SUMMARY_POINTS[b.request.cat] || ['Розібрали ситуацію.', 'Визначили наступні кроки.']).join('\n');
+    commit(); log('session_end');
+    nav('/summary/' + b.id);
+  };
+};
+
+PAGES.summary = (m, r) => {
+  const b = myBooking(r.param); if (!b) return PAGES.notFound(m);
+  if (b.status !== 'done') return redirect('/session/' + b.id);
+  const summaryHtml = b.summaryText
+    ? `<ul>${b.summaryText.split('\n').filter(Boolean).map(p => `<li>${esc(p)}</li>`).join('')}</ul>`
+    : '<p class="hint">Фахівець ще готує підсумок. Він з\'явиться у вашому кабінеті, а ми надішлемо лист.</p>';
+  m.innerHTML = `
+    <h2>Підсумок консультації</h2>
+    <div class="card">
+      <p><strong>Ваше питання:</strong> ${esc(b.request.question)}</p>
+      <p><strong>Від ${esc(b.expertName)}:</strong></p>
+      ${summaryHtml}
+      <p class="hint">Підсумок бачите лише ви. Він зберігається в кабінеті.</p>
+    </div>
+    ${b.review ? `<div class="ok">Ваш відгук: ${'★'.repeat(b.review.rating)} · питання закрите: ${RESOLVED[b.review.resolved]}</div>
+      <div class="actions"><button class="primary" id="done">Готово</button></div>` : `
+    <h3>Як пройшла консультація?</h3>
+    <fieldset><legend>Оцінка</legend>
+      <div class="slots">${[1, 2, 3, 4, 5].map(n => `<button type="button" class="star small" data-n="${n}" aria-pressed="false" aria-label="${n} з 5">${'★'.repeat(n)}</button>`).join('')}</div>
+    </fieldset>
+    <div id="rateErr" class="error"></div>
+    <fieldset class="radio-row"><legend>Ваше питання закрите?</legend>
+      <label><input type="radio" name="resolved" value="yes"> Так</label>
+      <label><input type="radio" name="resolved" value="partly"> Частково</label>
+      <label><input type="radio" name="resolved" value="no"> Ні</label>
+    </fieldset>
+    <div id="resErr" class="error"></div>
+    <label for="comment">Коментар (необов'язково)</label>
+    <textarea id="comment" maxlength="500" style="min-height:70px"></textarea>
+    <div class="actions"><button class="primary" id="send">Надіслати відгук</button><button id="skip">Пропустити</button></div>`}`;
+  if (b.review) { $('#done', m).onclick = () => nav('/thanks/' + b.id); return; }
+  let rating = 0;
+  m.querySelectorAll('.star').forEach(btn => btn.onclick = () => {
+    m.querySelectorAll('.star').forEach(x => x.setAttribute('aria-pressed', 'false'));
+    btn.setAttribute('aria-pressed', 'true'); rating = +btn.dataset.n; setErr('rateErr', '');
+  });
+  $('#send', m).onclick = () => {
+    const res = (m.querySelector('input[name=resolved]:checked') || {}).value;
+    const errs = [];
+    if (!rating) { setErr('rateErr', 'Поставте оцінку'); errs.push('rating'); }
+    if (!res) { setErr('resErr', 'Оберіть варіант'); errs.push('resolved'); } else setErr('resErr', '');
+    if (errs.length) return fail(errs, [], 'відгук');
+    b.review = { rating, resolved: res, comment: $('#comment', m).value.trim() };
+    commit();
+    log('review_sent', `${rating}★, закрито: ${RESOLVED[res]}`);
+    nav('/thanks/' + b.id);
+  };
+  $('#skip', m).onclick = () => nav('/thanks/' + b.id);
+};
+
+PAGES.thanks = (m, r) => {
+  const b = myBooking(r.param); if (!b) return PAGES.notFound(m);
+  m.innerHTML = `
+    <h2>Дякуємо!</h2>
+    <p>Консультація і підсумок збережені у вашому кабінеті.</p>
+    <div class="actions"><button class="primary" id="newQ">Поставити нове питання</button><button id="cab">Мій кабінет ↗</button></div>`;
+  $('#newQ', m).onclick = () => { flow = freshFlow(); nav('/ask'); };
+  $('#cab', m).onclick = openCabinet;
+};
+
+/* ---------- Кабінет (відкривається в окремій вкладці) ---------- */
+PAGES.cabinet = m => {
+  const u = me();
+  if (!u) {
+    m.innerHTML = `<h2>Кабінет</h2><p>Увійдіть або заповніть профіль, щоб бачити свої консультації.</p>
+      <div class="actions"><button class="primary" id="login">Увійти</button><button id="signup">Заповнити профіль</button></div>`;
+    $('#login', m).onclick = () => nav('/login?next=cabinet');
+    $('#signup', m).onclick = () => nav('/profile?next=cabinet');
+    return;
+  }
+  if (u.type === 'expert') return expertCabinet(m, u);
+  clientCabinet(m, u);
+};
+
+function bookingRow(b, side) {
+  const who = side === 'client' ? b.expertName : b.clientName;
+  return `<div class="card" data-bid="${b.id}">
+    <div class="row"><strong>${esc(who)}</strong><span>${esc(whenText(b.at))} · ${b.price} грн</span></div>
+    <p style="margin:4px 0">${esc(b.request.question)}</p>`;
+}
+function clientCabinet(m, u) {
+  const mine = db.bookings.filter(b => b.clientId === u.id).sort((x, y) => x.at - y.at);
+  const upcoming = mine.filter(b => b.status === 'booked');
+  const past = mine.filter(b => b.status === 'done').reverse();
+  m.innerHTML = `
+    <h2>Мій кабінет</h2>
+    ${linkedOf(u) ? '<div class="notice">Ви також фахівець. Кабінет фахівця відкривається перемикачем «Фахівець» у меню.</div>' : ''}
+    <div class="card"><div class="row"><strong>${esc(u.name)}</strong><a href="#/profile">Змінити профіль</a></div><span class="hint">${esc(u.email)}${u.about ? ' · ' + esc(u.about) : ''}</span></div>
+    <div class="actions"><button class="primary" id="newQ">Поставити нове питання</button></div>
+    <h3>Найближчі консультації</h3>
+    ${upcoming.length ? upcoming.map(b => bookingRow(b, 'client') + `
+      <div class="actions" style="margin-top:6px"><button class="small" data-join="${b.id}">Приєднатися</button></div></div>`).join('') : '<p class="hint">Поки немає запланованих консультацій.</p>'}
+    <h3>Минулі консультації</h3>
+    ${past.length ? past.map(b => bookingRow(b, 'client') + `
+      ${b.summaryText ? `<details><summary>Підсумок</summary><ul>${b.summaryText.split('\n').filter(Boolean).map(p => `<li>${esc(p)}</li>`).join('')}</ul></details>` : '<p class="hint">Фахівець ще готує підсумок.</p>'}
+      ${b.review ? `<p class="hint">Ваша оцінка: ${'★'.repeat(b.review.rating)}</p>` : `<div class="actions" style="margin-top:6px"><button class="small" data-rate="${b.id}">Оцінити</button></div>`}
+      </div>`).join('') : '<p class="hint">Тут з\'являться проведені консультації та їхні підсумки.</p>'}`;
+  $('#newQ', m).onclick = () => { flow = freshFlow(); nav('/ask'); };
+  m.querySelectorAll('[data-join]').forEach(b => b.onclick = () => nav('/session/' + b.dataset.join));
+  m.querySelectorAll('[data-rate]').forEach(b => b.onclick = () => nav('/summary/' + b.dataset.rate));
+}
+function expertCabinet(m, u) {
+  const rec = myExpertRecord();
+  if (!rec) { m.innerHTML = '<h2>Кабінет фахівця</h2><p>Анкету не знайдено.</p>'; return; }
+  const pub = regToPublic(rec);
+  const mine = db.bookings.filter(b => b.expertId === rec.id).sort((x, y) => x.at - y.at);
+  const upcoming = mine.filter(b => b.status === 'booked');
+  const done = mine.filter(b => b.status === 'done').reverse();
+  const gross = done.reduce((s, b) => s + b.price, 0);
+  m.innerHTML = `
+    <h2>Кабінет фахівця</h2>
+    ${linkedOf(u) ? `<div class="notice">Консультації, які ви бронюєте для себе, лежать у кабінеті клієнта. ${(n => n ? `Зараз їх ${n}. ` : '')(db.bookings.filter(b => b.clientId === linkedOf(u).id && b.status === 'booked').length)}Перемикач «Клієнт» у меню.</div>` : ''}
+    ${rec.status === 'pending'
+      ? '<div class="warn">Заявка на перевірці. Після схвалення профіль з\'явиться в підборі для клієнтів.</div>'
+      : '<div class="ok">Профіль активний (демо): клієнти бачать вас у підборі з позначкою «без перевірки (демо)».</div>'}
+    <h3>Як вас бачать клієнти</h3>
+    ${expertCardHtml(pub)}
+    <h3>Графік</h3>
+    <p>${rec.days.map(d => WEEKDAYS[d]).join(', ')}, ${rec.from}–${rec.to} (ваш пояс, ${utcLabel(expertTz(rec))}) · ${rec.price} грн за 15 хв</p>
+    <p class="hint">Час бронювань нижче показано в поясі цього пристрою, ${utcLabel(VIEW_TZ)}.</p>
+    <h3>Найближчі консультації</h3>
+    ${upcoming.length ? upcoming.map(b => bookingRow(b, 'expert') + `
+      <details><summary>Опис від клієнта</summary><p style="white-space:pre-wrap">${esc(b.request.text)}</p></details>
+      <p class="hint">Посилання на відеозв'язок з'явиться тут за 5 хвилин до початку.</p></div>`).join('') : '<p class="hint">Поки немає бронювань.</p>'}
+    <h3>Проведені консультації</h3>
+    ${done.length ? done.map(b => bookingRow(b, 'expert') + (b.summaryText
+      ? `<details><summary>Ваш підсумок</summary><p style="white-space:pre-wrap">${esc(b.summaryText)}</p></details>`
+      : `<label for="sum_${b.id}">Підсумок для клієнта</label>
+         <p class="hint">Кілька пунктів: що обговорили і які наступні кроки. Кожен пункт з нового рядка.</p>
+         <textarea id="sum_${b.id}" rows="4"></textarea><div id="sumErr_${b.id}" class="error"></div>
+         <div class="actions" style="margin-top:6px"><button class="small" data-sum="${b.id}">Надіслати підсумок</button></div>`) +
+      `${b.review ? `<p class="hint">Оцінка клієнта: ${'★'.repeat(b.review.rating)}</p>` : ''}</div>`).join('') : '<p class="hint">Тут з\'являться проведені консультації.</p>'}
+    <h3>Заробіток</h3>
+    <table>
+      <tr><td>Проведено консультацій</td><td>${done.length}</td></tr>
+      <tr><td>Оплачено клієнтами</td><td>${gross} грн</td></tr>
+      <tr><td>Комісія платформи (20%)</td><td>${Math.round(gross * COMMISSION)} грн</td></tr>
+      <tr><td>До виплати вам</td><td><strong>${Math.round(gross * (1 - COMMISSION))} грн</strong></td></tr>
+    </table>`;
+  m.querySelectorAll('[data-sum]').forEach(btn => btn.onclick = () => {
+    const id = btn.dataset.sum, ta = $('#sum_' + id, m), v = ta.value.trim();
+    if (v.length < 20) { setErr('sumErr_' + id, 'Напишіть хоча б кілька речень', ta); return fail(['summary'], [ta], 'підсумок фахівця'); }
+    const b = db.bookings.find(x => x.id === id); b.summaryText = v; b.summaryAt = Date.now(); commit();
+    log('expert_summary');
+    render({ silent: true });
+  });
+}
+
+/* ---------- Реєстрація фахівця: 5 кроків ---------- */
+const EXPERT_STEPS = ['Обліковий запис', 'Експертиза', 'Кваліфікація і перевірка', 'Ціна і графік', 'Підтвердження'];
+const MAX_FILE = 10 * 1024 * 1024;
+const fileSize = n => (n > 1024 * 1024 ? (n / 1024 / 1024).toFixed(1) + ' МБ' : Math.max(1, Math.round(n / 1024)) + ' КБ');
+
+PAGES.becomeExpert = m => {
+  const u = me();
+  if (u && (u.type === 'expert' || linkedOf(u))) {
+    m.innerHTML = `<h2>Ви вже зареєстровані як фахівець</h2><p>Кабінет фахівця відкривається перемикачем «Фахівець» у меню.</p><div class="actions"><button class="primary" id="cab">Відкрити кабінет ↗</button></div>`;
+    $('#cab', m).onclick = openCabinet;
+    return;
+  }
+  if (!db.expertDraft) {
+    db.expertDraft = { step: 1, name: (u && u.name) || '', email: (u && u.email) || '', phone: '', passOk: false, about: '', position: '', years: '',
+      cat: null, secondary: null, tags: [], education: '', qualFiles: [], idFile: null, link: '', price: '', days: [0, 1, 2, 3, 4], from: '10:00', to: '18:00' };
+    commit();
+  }
+  renderWizard(m);
+};
+
+function renderWizard(m) {
+  const d = db.expertDraft, step = d.step;
+  m.innerHTML = `
+    <h2>Реєстрація фахівця</h2>
+    <p class="hint">Кожну заявку перевіряють вручну, тому клієнти можуть довіряти профілям. Займе 5–7 хвилин, чернетка зберігається автоматично.</p>
+    <ol class="wsteps">${EXPERT_STEPS.map((s, i) => `<li class="${i + 1 < step ? 'done' : i + 1 === step ? 'current' : ''}" ${i + 1 === step ? 'aria-current="step"' : ''}>${i + 1}. ${s}</li>`).join('')}</ol>
+    <h3>Крок ${step} з ${EXPERT_STEPS.length}: ${EXPERT_STEPS[step - 1]}</h3>
+    <form id="wf" novalidate>
+      ${WIZ[step].html(d)}
+      <div class="actions">
+        ${step > 1 ? '<button type="button" id="wBack">Назад</button>' : ''}
+        <button type="button" class="primary" data-submit>${step < EXPERT_STEPS.length ? 'Далі' : 'Надіслати на перевірку'}</button>
+      </div>
+    </form>`;
+  const form = $('#wf', m);
+  if (WIZ[step].bind) WIZ[step].bind(m, d);
+  bindSubmit(form, () => {
+    const res = WIZ[step].validate(m, d); // збирає значення в чернетку і повертає [помилки, поля]
+    commit();
+    if (res.errs.length) {
+      return fail(res.errs, res.first, `фахівець, крок ${step}`);
+    }
+    if (step < EXPERT_STEPS.length) {
+      d.step++; commit();
+      renderWizard(m);
+      const h = m.querySelector('h3'); if (h) { h.tabIndex = -1; h.focus(); }
+    } else submitExpert(d);
+  });
+  if ($('#wBack', m)) $('#wBack', m).onclick = () => {
+    if (WIZ[step].collect) WIZ[step].collect(m, d);
+    d.step--; commit();
+    renderWizard(m);
+  };
+}
+
+const val = (m, id) => ($('#' + id, m) ? $('#' + id, m).value.trim() : '');
+function check(cond, id, msg, m, res, field) {
+  const f = field || $('#' + id, m);
+  setErr(id + 'Err', cond ? '' : msg, f);
+  if (!cond) { res.errs.push(id); res.first.push(f); }
+}
+
+const WIZ = {
+  1: {
+    html: d => `
+      <label for="w_name">Прізвище та ім'я</label>
+      <input id="w_name" type="text" autocomplete="name" value="${esc(d.name)}"><div id="w_nameErr" class="error"></div>
+      <label for="w_email">Робоча пошта</label>
+      <input id="w_email" type="email" autocomplete="email" value="${esc(d.email)}"><div id="w_emailErr" class="error"></div>
+      <label for="w_phone">Телефон</label>
+      <input id="w_phone" type="tel" autocomplete="tel" value="${esc(d.phone)}">
+      <p class="hint">Український номер. Потрібен для зв'язку щодо перевірки, клієнти його не бачать.</p><div id="w_phoneErr" class="error"></div>
+      <label for="w_pass">Пароль</label>
+      <input id="w_pass" type="password" autocomplete="new-password">
+      <p class="hint">Щонайменше 8 символів, літери й цифри.${d.passOk ? ' Пароль уже задано, повторно вводити не обов\'язково.' : ''}</p><div id="w_passErr" class="error"></div>
+      <label for="w_pass2">Повторіть пароль</label>
+      <input id="w_pass2" type="password" autocomplete="new-password"><div id="w_pass2Err" class="error"></div>`,
+    collect(m, d) { d.name = val(m, 'w_name'); d.email = val(m, 'w_email'); d.phone = val(m, 'w_phone'); },
+    validate(m, d) {
+      this.collect(m, d);
+      const res = { errs: [], first: [] };
+      check(/^[\p{L}'’ʼ-]{2,}(\s+[\p{L}'’ʼ-]{2,})+$/u.test(d.name), 'w_name', 'Вкажіть прізвище та ім\'я повністю', m, res);
+      const taken = db.users.some(u => u.type === 'expert' && u.email.toLowerCase() === d.email.toLowerCase());
+      check(EMAIL_RE.test(d.email) && !taken, 'w_email', taken ? 'Фахівець з такою поштою вже зареєстрований' : 'Перевірте адресу пошти', m, res);
+      check(/^(\+?380|0)\d{9}$/.test(d.phone.replace(/[\s()-]/g, '')), 'w_phone', 'Вкажіть номер у форматі +380XXXXXXXXX або 0XXXXXXXXX', m, res);
+      const p1 = $('#w_pass', m).value, p2 = $('#w_pass2', m).value;
+      if (p1 || !d.passOk) {
+        const strong = p1.length >= 8 && /\p{L}/u.test(p1) && /\d/.test(p1);
+        check(strong, 'w_pass', 'Пароль має містити щонайменше 8 символів, літери й цифри', m, res);
+        if (strong) {
+          check(p1 === p2, 'w_pass2', 'Паролі не збігаються', m, res);
+          if (p1 === p2) { d.passOk = true; d.pass = p1; }
+        }
+      }
+      return res;
+    },
+  },
+  2: {
+    html: d => `
+      <label for="w_about">Опишіть свою експертизу</label>
+      <p class="hint">Своїми словами: у чому ви фахівець, з якими питаннями до вас звертаються і чим можете допомогти за 15 хвилин. AI визначить напрям і ключові теми.</p>
+      <textarea id="w_about" rows="6" maxlength="2000">${esc(d.about)}</textarea>
+      <div class="row"><span id="w_aboutErr" class="error"></span><span class="hint" id="w_aboutCount"></span></div>
+      <label for="w_position">Посада і місце роботи</label>
+      <input id="w_position" type="text" value="${esc(d.position)}"><div id="w_positionErr" class="error"></div>
+      <label for="w_years">Досвід у цій сфері, років</label>
+      <input id="w_years" class="short" type="number" min="0" max="60" step="1" inputmode="numeric" value="${esc(d.years)}"><div id="w_yearsErr" class="error"></div>`,
+    bind(m) {
+      const ta = $('#w_about', m), c = $('#w_aboutCount', m);
+      const upd = () => { const n = ta.value.trim().length; c.textContent = n < 80 ? `${n} / ще ${80 - n} симв.` : `${n} симв. ✓`; };
+      upd(); ta.addEventListener('input', upd);
+    },
+    collect(m, d) { d.about = val(m, 'w_about'); d.position = val(m, 'w_position'); d.years = val(m, 'w_years'); },
+    validate(m, d) {
+      this.collect(m, d);
+      const res = { errs: [], first: [] };
+      const yrs = Number(d.years);
+      check(d.about.length >= 80, 'w_about', 'Опишіть детальніше: щонайменше 80 символів', m, res);
+      check(d.position.length >= 3, 'w_position', 'Вкажіть посаду і місце роботи', m, res);
+      check(d.years !== '' && Number.isInteger(yrs) && yrs >= 0 && yrs <= 60, 'w_years', 'Вкажіть ціле число років від 0 до 60', m, res);
+      if (res.errs.includes('w_about')) return res;
+      const ea = analyzeExpertise(d.about + ' ' + d.position);
+      log('ai_expertise', `напрям=${ea.primary || 'немає'}, теги=${ea.tags.join(', ') || 'немає'}`);
+      if (ea.sensitive) check(false, 'w_about', 'Медичні та психологічні консультації на першому етапі не підключені', m, res);
+      else if (!ea.primary) check(false, 'w_about', 'AI не зміг визначити напрям. Напишіть конкретніше, з якими задачами ви допомагаєте клієнтам.', m, res);
+      else { d.cat = ea.primary; d.secondary = ea.secondary; d.tags = ea.tags; }
+      return res;
+    },
+  },
+  3: {
+    html: d => `
+      <div class="card"><strong>AI визначив напрям:</strong> ${esc(catName(d.cat))}${d.secondary ? ` <span class="hint">(також ${esc(catName(d.secondary))})</span>` : ''}
+        <br><span class="hint">Ключові теми: ${d.tags.map(esc).join(', ') || 'не знайдено'}. Не той напрям? Поверніться на крок назад і уточніть опис.</span></div>
+      <label for="w_edu">Освіта</label>
+      <input id="w_edu" type="text" value="${esc(d.education)}"><div id="w_eduErr" class="error"></div>
+      <label for="w_qual">Документи про кваліфікацію</label>
+      <p class="hint">Диплом, сертифікати, ліцензія чи свідоцтво. PDF, JPG або PNG, до 10 МБ кожен.</p>
+      <input id="w_qual" type="file" multiple accept=".pdf,.jpg,.jpeg,.png">
+      <ul class="files" id="w_qualList"></ul><div id="w_qualErr" class="error"></div>
+      <label for="w_id">Документ, що посвідчує особу</label>
+      <p class="hint">Потрібен лише для перевірки. Клієнти його не бачать.</p>
+      <input id="w_id" type="file" accept=".pdf,.jpg,.jpeg,.png">
+      <ul class="files" id="w_idList"></ul><div id="w_idErr" class="error"></div>
+      <label for="w_link">Профіль або портфоліо <span class="hint">(необов'язково)</span></label>
+      <input id="w_link" type="url" value="${esc(d.link)}"><div id="w_linkErr" class="error"></div>
+      <p class="hint">У прототипі файли нікуди не надсилаються: зберігаються лише їхні назви.</p>`,
+    bind(m, d) {
+      const draw = () => {
+        $('#w_qualList', m).innerHTML = d.qualFiles.map((f, i) => `<li>📄 ${esc(f.name)} <span class="hint">${fileSize(f.size)}</span><button type="button" class="small" data-rmq="${i}">Прибрати</button></li>`).join('');
+        $('#w_idList', m).innerHTML = d.idFile ? `<li>🪪 ${esc(d.idFile.name)} <span class="hint">${fileSize(d.idFile.size)}</span><button type="button" class="small" data-rmid>Прибрати</button></li>` : '';
+        m.querySelectorAll('[data-rmq]').forEach(b => b.onclick = () => { d.qualFiles.splice(+b.dataset.rmq, 1); commit(); draw(); });
+        const rid = m.querySelector('[data-rmid]'); if (rid) rid.onclick = () => { d.idFile = null; commit(); draw(); };
+      };
+      const okType = f => /\.(pdf|jpe?g|png)$/i.test(f.name);
+      $('#w_qual', m).onchange = e => {
+        const bad = [];
+        for (const f of e.target.files) {
+          if (!okType(f)) bad.push(`${f.name}: непідтримуваний формат`);
+          else if (f.size > MAX_FILE) bad.push(`${f.name}: більше 10 МБ`);
+          else if (!d.qualFiles.some(x => x.name === f.name)) d.qualFiles.push({ name: f.name, size: f.size });
+        }
+        setErr('w_qualErr', bad.join('; '));
+
+        e.target.value = ''; commit(); draw();
+      };
+      $('#w_id', m).onchange = e => {
+        const f = e.target.files[0]; if (!f) return;
+        if (!okType(f) || f.size > MAX_FILE) { setErr('w_idErr', !okType(f) ? 'Непідтримуваний формат' : 'Файл більший за 10 МБ'); }
+        else { d.idFile = { name: f.name, size: f.size }; setErr('w_idErr', ''); }
+        e.target.value = ''; commit(); draw();
+      };
+      draw();
+    },
+    collect(m, d) { d.education = val(m, 'w_edu'); d.link = val(m, 'w_link'); },
+    validate(m, d) {
+      this.collect(m, d);
+      const res = { errs: [], first: [] };
+      check(d.education.length >= 3, 'w_edu', 'Вкажіть освіту', m, res);
+      check(d.qualFiles.length > 0, 'w_qual', 'Додайте хоча б один документ про кваліфікацію', m, res);
+      check(!!d.idFile, 'w_id', 'Додайте документ, що посвідчує особу', m, res);
+      check(!d.link || /^https?:\/\/[^\s.]+\.\S+$/i.test(d.link), 'w_link', 'Посилання має починатися з http:// або https://', m, res);
+      return res;
+    },
+  },
+  4: {
+    html: d => {
+      const level = levelFor(d.years), [lo, hi] = LEVEL_PRICE[level];
+      return `
+      <div class="card">Попередній рівень: <strong>${LEVELS[level]}</strong> (досвід ${esc(d.years)} р.). Остаточно рівень підтверджується після перевірки.</div>
+      <label for="w_price">Ціна консультації 15 хвилин, грн</label>
+      <p class="hint">Рекомендований діапазон для вашого рівня: ${lo}–${hi} грн. Ціну встановлюєте ви. Комісія платформи 20%, ви отримаєте <strong id="w_net">вкажіть ціну</strong>.</p>
+      <input id="w_price" class="short" type="number" min="50" max="5000" step="10" inputmode="numeric" value="${esc(d.price)}">
+      <div id="w_priceWarn" class="warn" hidden></div><div id="w_priceErr" class="error"></div>
+      <fieldset><legend>Дні, коли ви приймаєте</legend>
+        <div class="radio-row">${WEEKDAYS.map((w, i) => `<label><input type="checkbox" name="w_day" value="${i}" ${d.days.includes(i) ? 'checked' : ''}> ${w}</label>`).join('')}</div>
+      </fieldset><div id="w_daysErr" class="error"></div>
+      <div class="row" style="justify-content:flex-start;gap:16px">
+        <div><label for="w_from">З</label><input id="w_from" class="short" type="time" step="900" value="${esc(d.from)}"></div>
+        <div><label for="w_to">До</label><input id="w_to" class="short" type="time" step="900" value="${esc(d.to)}"></div>
+      </div><div id="w_timeErr" class="error"></div>
+      <p class="hint">Вказуйте час у вашому часовому поясі, ${utcLabel(VIEW_TZ)}. Клієнти бачитимуть вільні слоти щогодини, кожен у своєму часі.</p>`;
+    },
+    bind(m, d) {
+      const [lo, hi] = LEVEL_PRICE[levelFor(d.years)];
+      const inp = $('#w_price', m), warn = $('#w_priceWarn', m), net = $('#w_net', m);
+      const upd = () => {
+        const p = Number(inp.value);
+        net.textContent = p > 0 ? `${Math.round(p * (1 - COMMISSION))} грн` : 'вкажіть ціну';
+        const out = p > 0 && (p < lo || p > hi);
+        warn.hidden = !out;
+        if (out) warn.textContent = p < lo ? 'Ціна нижча за рекомендовану. Можна, але дохід буде меншим.' : 'Ціна вища за рекомендовану. Клієнти можуть рідше вас обирати, поки немає відгуків.';
+      };
+      upd(); inp.addEventListener('input', upd);
+    },
+    collect(m, d) {
+      d.price = val(m, 'w_price');
+      d.days = [...m.querySelectorAll('input[name=w_day]:checked')].map(x => +x.value);
+      d.from = val(m, 'w_from'); d.to = val(m, 'w_to');
+    },
+    validate(m, d) {
+      this.collect(m, d);
+      const res = { errs: [], first: [] };
+      const p = Number(d.price);
+      check(Number.isInteger(p) && p >= 50 && p <= 5000, 'w_price', 'Вкажіть ціну цілим числом від 50 до 5000 грн', m, res);
+      check(d.days.length > 0, 'w_days', 'Оберіть хоча б один день', m, res, m.querySelector('input[name=w_day]'));
+      const okTime = d.from && d.to && toMin(d.to) - toMin(d.from) >= 60;
+      check(okTime, 'w_time', 'Проміжок має бути щонайменше годину, і «до» пізніше за «з»', m, res, $('#w_from', m));
+      return res;
+    },
+  },
+  5: {
+    html: d => {
+      const preview = regToPublic({ ...d, id: 'preview', level: levelFor(d.years), price: Number(d.price), status: 'auto_approved' });
+      return `
+      <p>Так вас бачитимуть клієнти в підборі:</p>
+      ${expertCardHtml(preview)}
+      <fieldset class="radio-col"><legend>Умови</legend>
+        <label><input type="checkbox" id="a_terms"> Погоджуюсь з умовами для фахівців</label>
+        <label><input type="checkbox" id="a_fee"> Розумію, що платформа утримує 20% з кожної консультації</label>
+        <label><input type="checkbox" id="a_sens"> Не надаватиму медичних і психологічних консультацій</label>
+        <label><input type="checkbox" id="a_verify"> Даю згоду на перевірку документів і обробку персональних даних</label>
+      </fieldset>
+      <a href="#" id="w_terms" aria-expanded="false">Прочитати умови для фахівців</a>
+      <div id="w_termsText" class="card hint" hidden>Фахівець відповідає за зміст консультації і не домовляється з клієнтами про оплату поза платформою. Платформа утримує 20% комісії та виплачує решту щотижня. Порушення правил може призвести до блокування профілю.</div>
+      <div id="a_err" class="error"></div>
+      <p class="hint">Реквізити для виплат додасте в кабінеті після схвалення заявки.</p>`;
+    },
+    bind(m) {
+      $('#w_terms', m).onclick = e => {
+        e.preventDefault();
+        const box = $('#w_termsText', m); box.hidden = !box.hidden;
+        e.target.setAttribute('aria-expanded', String(!box.hidden));
+        if (!box.hidden) log('open_expert_terms');
+      };
+    },
+    validate(m) {
+      const res = { errs: [], first: [] };
+      const boxes = ['a_terms', 'a_fee', 'a_sens', 'a_verify'].map(id => $('#' + id, m));
+      const missing = boxes.filter(b => !b.checked);
+      $('#a_err', m).textContent = missing.length ? 'Щоб надіслати заявку, позначте всі умови' : '';
+      missing.forEach(b => { res.errs.push(b.id); res.first.push(b); });
+      return res;
+    },
+  },
+};
+
+function submitExpert(d) {
+  const user = { id: uid('x'), type: 'expert', name: d.name, email: d.email, phone: d.phone, pass: d.pass || '', createdAt: Date.now() };
+  const rec = {
+    id: user.id, name: d.name, email: d.email, phone: d.phone, pass: d.pass || '', cat: d.cat, secondary: d.secondary, tags: d.tags,
+    about: d.about, position: d.position, years: Number(d.years), education: d.education,
+    qualFiles: d.qualFiles, idFile: d.idFile, link: d.link, level: levelFor(d.years), price: Number(d.price),
+    days: d.days, from: d.from, to: d.to, tz: VIEW_TZ, status: 'auto_approved', submittedAt: Date.now(),
+  };
+  db.users.push(user); db.experts.push(rec); db.currentUserId = user.id; db.expertDraft = null;
+  linkClientFor(db, user);
+  db.expertSession = user.id;
+  commit();
+  nav('/expert-sent');
+}
+
+PAGES.expertSent = m => {
+  const rec = myExpertRecord();
+  if (!rec) return redirect('/become-expert');
+  m.innerHTML = `
+    <h2>Заявку надіслано ✓</h2>
+    <p>Дякуємо, ${esc(rec.name.split(/\s+/)[1] || rec.name)}! Що далі:</p>
+    <ol class="how">
+      <li>У демо-версії заявку схвалено автоматично, перевірки документів не було.</li>
+      <li>Ваш профіль уже з'явився в підборі для клієнтів з теми «${esc(catName(rec.cat))}» з позначкою «без перевірки (демо)».</li>
+      <li>Бронювання і заробіток ви бачите в кабінеті.</li>
+    </ol>
+    <div class="actions"><button class="primary" id="cab">Відкрити кабінет ↗</button><button id="home">На головну</button></div>`;
+  $('#cab', m).onclick = openCabinet;
+  $('#home', m).onclick = () => nav('/');
+};
+
+PAGES.notFound = m => {
+  m.innerHTML = `<h2>Сторінку не знайдено</h2><p>Можливо, посилання застаріло або ви увійшли під іншим акаунтом.</p><div class="actions"><button class="primary" id="home">На головну</button></div>`;
+  $('#home', m).onclick = () => nav('/');
+};
+
+// Усі внутрішні посилання ведемо через nav(): так вони працюють і з маршрутом у пам'яті
+document.addEventListener('click', e => {
+  const a = e.target.closest('a[href^="#/"]');
+  if (a && !a.hasAttribute('data-newtab') && !e.ctrlKey && !e.metaKey && !e.shiftKey && e.button === 0) {
+    e.preventDefault();
+    nav(a.getAttribute('href').slice(1));
+  }
+}, false);
+
+// Синхронізація між вкладками: бронювання з основної вкладки одразу видно в кабінеті
+window.addEventListener('storage', e => {
+  if (e.key !== STORE_KEY) return;
+  try { db = e.newValue ? { ...emptyDb(), ...JSON.parse(e.newValue) } : emptyDb(); } catch { return; }
+  renderNav();
+  const ae = document.activeElement;
+  const typing = ae && $('#main').contains(ae) && ae.matches('input, textarea, select');
+  if (['cabinet', 'home'].includes(current) && !typing) render({ silent: true });
+});
+
+showStorageWarn();
+render();
+</script>
+</body>
+</html>
