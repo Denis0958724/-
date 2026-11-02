@@ -49,6 +49,8 @@
   button:disabled { opacity: .5; cursor: not-allowed; }
   .card { border: 1px solid #ccc; padding: 12px; margin: 8px 0; }
   .row { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  .tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 12px; }
+  .tabs button[aria-selected=true] { background: #333; color: #fff; }
   .badge { display: inline-block; font-size: 12px; padding: 1px 6px; border: 1px solid #999; border-radius: 8px; margin-left: 4px; }
   .slots { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
   .slot[aria-pressed=true], .star[aria-pressed=true], .role-switch button[aria-pressed=true] { background: #333; color: #fff; }
@@ -1228,14 +1230,51 @@ function clientCabinet(m, u) {
   m.querySelectorAll('[data-join]').forEach(b => b.onclick = () => nav('/session/' + b.dataset.join));
   m.querySelectorAll('[data-rate]').forEach(b => b.onclick = () => nav('/summary/' + b.dataset.rate));
 }
+// Стан консультації для фахівця. Окремо не зберігаємо, рахуємо з часу і підсумку.
+// Запис без поля стану вважаємо заброньованим.
+function expertState(b) {
+  if (b.status === 'done') return b.summaryText ? { tab: 'done' } : { tab: 'action', why: 'чекає підсумку' };
+  return b.at > Date.now() ? { tab: 'planned' } : { tab: 'action', why: 'час минув' };
+}
+const XTABS = [['action', 'Потребує дії'], ['planned', 'Заплановано'], ['done', 'Завершено']];
+const XEMPTY = { action: 'Нічого не чекає на вас.', planned: 'Запланованих консультацій немає.', done: 'Тут будуть консультації з підсумком.' };
+const XTAB_KEY = 'micro-consult-xtab-v1';
+function saveXTab(t) { try { sessionStorage.setItem(XTAB_KEY, t); } catch { /* у перегляді Claude сховища немає */ } memXTab = t; }
+let memXTab = null;
+function expertTab(groups) {
+  let t = memXTab;
+  try { t = sessionStorage.getItem(XTAB_KEY) || t; } catch { /* немає сховища */ }
+  if (groups[t]) return t;
+  return groups.action.length || !groups.planned.length ? 'action' : 'planned';
+}
+function xCard(b) {
+  const st = expertState(b);
+  const desc = `<details><summary>Опис від клієнта</summary><p style="white-space:pre-wrap">${esc(b.request.text)}</p></details>`;
+  const head = bookingRow(b, 'expert').replace('<strong>', st.why ? `<span><strong>` : '<strong>')
+    .replace('</strong>', st.why ? `</strong><span class="badge" data-why>${st.why}</span></span>` : '</strong>');
+  if (st.tab === 'planned') return head + desc + `
+      <p class="hint">Посилання на відеозв'язок з'явиться тут за 5 хвилин до початку.</p></div>`;
+  if (st.why === 'час минув') return head + desc + `
+      <p class="hint">Консультацію не провели.</p></div>`;
+  return head + desc + (b.summaryText
+      ? `<details><summary>Ваш підсумок</summary><p style="white-space:pre-wrap">${esc(b.summaryText)}</p></details>`
+      : `<label for="sum_${b.id}">Підсумок для клієнта</label>
+         <p class="hint">Кілька пунктів: що обговорили і які наступні кроки. Кожен пункт з нового рядка.</p>
+         <textarea id="sum_${b.id}" rows="4"></textarea><div id="sumErr_${b.id}" class="error"></div>
+         <div class="actions" style="margin-top:6px"><button class="small" data-sum="${b.id}">Надіслати підсумок</button></div>`) +
+      `${b.review ? `<p class="hint">Оцінка клієнта: ${'★'.repeat(b.review.rating)}</p>` : ''}</div>`;
+}
 function expertCabinet(m, u) {
   const rec = myExpertRecord();
   if (!rec) { m.innerHTML = '<h2>Кабінет фахівця</h2><p>Анкету не знайдено.</p>'; return; }
   const pub = regToPublic(rec);
   const mine = db.bookings.filter(b => b.expertId === rec.id).sort((x, y) => x.at - y.at);
-  const upcoming = mine.filter(b => b.status === 'booked');
-  const done = mine.filter(b => b.status === 'done').reverse();
+  const done = mine.filter(b => b.status === 'done');
   const gross = done.reduce((s, b) => s + b.price, 0);
+  const groups = { action: [], planned: [], done: [] };
+  mine.forEach(b => groups[expertState(b).tab].push(b));
+  groups.done.reverse();
+  const tab = expertTab(groups);
   m.innerHTML = `
     <h2>Кабінет фахівця</h2>
     ${linkedOf(u) ? `<div class="notice">Консультації, які ви бронюєте для себе, лежать у кабінеті клієнта. ${(n => n ? `Зараз їх ${n}. ` : '')(db.bookings.filter(b => b.clientId === linkedOf(u).id && b.status === 'booked').length)}Перемикач «Клієнт» у меню.</div>` : ''}
@@ -1247,18 +1286,9 @@ function expertCabinet(m, u) {
     <h3>Графік</h3>
     <p>${rec.days.map(d => WEEKDAYS[d]).join(', ')}, ${rec.from}–${rec.to} (ваш пояс, ${utcLabel(expertTz(rec))}) · ${rec.price} грн за 15 хв</p>
     <p class="hint">Час бронювань нижче показано в поясі цього пристрою, ${utcLabel(VIEW_TZ)}.</p>
-    <h3>Найближчі консультації</h3>
-    ${upcoming.length ? upcoming.map(b => bookingRow(b, 'expert') + `
-      <details><summary>Опис від клієнта</summary><p style="white-space:pre-wrap">${esc(b.request.text)}</p></details>
-      <p class="hint">Посилання на відеозв'язок з'явиться тут за 5 хвилин до початку.</p></div>`).join('') : '<p class="hint">Поки немає бронювань.</p>'}
-    <h3>Проведені консультації</h3>
-    ${done.length ? done.map(b => bookingRow(b, 'expert') + (b.summaryText
-      ? `<details><summary>Ваш підсумок</summary><p style="white-space:pre-wrap">${esc(b.summaryText)}</p></details>`
-      : `<label for="sum_${b.id}">Підсумок для клієнта</label>
-         <p class="hint">Кілька пунктів: що обговорили і які наступні кроки. Кожен пункт з нового рядка.</p>
-         <textarea id="sum_${b.id}" rows="4"></textarea><div id="sumErr_${b.id}" class="error"></div>
-         <div class="actions" style="margin-top:6px"><button class="small" data-sum="${b.id}">Надіслати підсумок</button></div>`) +
-      `${b.review ? `<p class="hint">Оцінка клієнта: ${'★'.repeat(b.review.rating)}</p>` : ''}</div>`).join('') : '<p class="hint">Тут з\'являться проведені консультації.</p>'}
+    <h3>Консультації</h3>
+    <div class="tabs" role="tablist" aria-label="Стан консультацій">${XTABS.map(([k, name]) => `<button type="button" class="small" role="tab" data-xtab="${k}" aria-selected="${k === tab}">${name} ${groups[k].length}</button>`).join('')}</div>
+    <div role="tabpanel" id="xpanel">${groups[tab].length ? groups[tab].map(b => xCard(b)).join('') : `<p class="hint">${XEMPTY[tab]}</p>`}</div>
     <h3>Заробіток</h3>
     <table>
       <tr><td>Проведено консультацій</td><td>${done.length}</td></tr>
@@ -1266,6 +1296,7 @@ function expertCabinet(m, u) {
       <tr><td>Комісія платформи (20%)</td><td>${Math.round(gross * COMMISSION)} грн</td></tr>
       <tr><td>До виплати вам</td><td><strong>${Math.round(gross * (1 - COMMISSION))} грн</strong></td></tr>
     </table>`;
+  m.querySelectorAll('[data-xtab]').forEach(btn => btn.onclick = () => { saveXTab(btn.dataset.xtab); render({ silent: true }); });
   m.querySelectorAll('[data-sum]').forEach(btn => btn.onclick = () => {
     const id = btn.dataset.sum, ta = $('#sum_' + id, m), v = ta.value.trim();
     if (v.length < 20) { setErr('sumErr_' + id, 'Напишіть хоча б кілька речень', ta); return fail(['summary'], [ta], 'підсумок фахівця'); }
