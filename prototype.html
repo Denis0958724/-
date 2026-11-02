@@ -1318,6 +1318,44 @@ function expertCabinet(m, u) {
   });
 }
 
+/* ---------- Перевірка освіти і посилання (крок 3 майстра) ---------- */
+// Освіта: назва закладу, ступінь, курси. Або абревіатура закладу великими літерами (КНУ, MBA).
+const EDU_RE = /(універс|університ|інститут|академі|коледж|технікум|училищ|ліце|гімназі|школ|факультет|кафедр|бакалавр|магістр|спеціаліст|аспірант|докторант|кандидат|доктор|ступін|ступен|диплом|сертиф|курс|освіт|спеціальн|университет|институт|академи|колледж|universit|college|institut|academy|school|faculty|bachelor|master|degree|diploma|certif|course|phd|mba|bsc|msc)/u;
+function eduOk(t) {
+  const c = noEmoji(t);
+  if (!realWords(c).length) return false;
+  return EDU_RE.test(c.toLowerCase()) || /(?<!\p{L})\p{Lu}{2,6}(?!\p{L})/u.test(c);
+}
+// Посилання: профіль на відомій платформі або власний сайт з ім'ям чи прізвищем в адресі.
+const PROFILE_HOSTS = ['linkedin.com', 'github.com', 'gitlab.com', 'behance.net', 'dribbble.com', 'facebook.com', 'instagram.com', 'x.com', 'twitter.com',
+  't.me', 'youtube.com', 'tiktok.com', 'threads.net', 'medium.com', 'upwork.com', 'djinni.co', 'work.ua', 'robota.ua', 'scholar.google.com', 'orcid.org'];
+const PROFILE_SUBS = ['medium.com', 'substack.com'];
+const NOT_HANDLE = ['', 'search', 'explore', 'home', 'feed', 'login', 'signup', 'watch', 'results', 'jobs', 'hashtag'];
+const SEARCH_HOST = /(^|\.)(google|bing|yahoo|duckduckgo|yandex|baidu|ecosia|startpage)\.[a-z.]+$/;
+const TR_A = { а: 'a', б: 'b', в: 'v', г: 'h', ґ: 'g', д: 'd', е: 'e', є: 'ie', ж: 'zh', з: 'z', и: 'y', і: 'i', ї: 'i', й: 'i', к: 'k', л: 'l', м: 'm', н: 'n', о: 'o', п: 'p',
+  р: 'r', с: 's', т: 't', у: 'u', ф: 'f', х: 'kh', ц: 'ts', ч: 'ch', ш: 'sh', щ: 'shch', ь: '', ю: 'iu', я: 'ia', ы: 'y', э: 'e', ё: 'e', ъ: '' };
+const TR_B = { ...TR_A, г: 'g', х: 'h', й: 'y', є: 'ye', ї: 'yi', ю: 'yu', я: 'ya' };
+const translit = (w, tr) => [...w.toLowerCase()].map(ch => tr[ch] ?? ch).join('').replace(/[^a-z]/g, '');
+function nameInHost(host, name) {
+  const h = host.replace(/[^a-z]/g, '');
+  return String(name).split(/[\s'’ʼ-]+/).some(part => [TR_A, TR_B].some(tr => {
+    const l = translit(part, tr);
+    return l.length >= 4 && h.includes(l.slice(0, 6));
+  }));
+}
+function linkProblem(link, name) {
+  if (!/^https?:\/\/[^\s.]+\.\S+$/i.test(link)) return 'Посилання має починатися з http:// або https://';
+  let u; try { u = new URL(link); } catch { return 'Посилання має починатися з http:// або https://'; }
+  const host = u.hostname.toLowerCase().replace(/^(www|m)\./, '');
+  const segs = u.pathname.split('/').filter(Boolean).map(x => x.toLowerCase());
+  if (PROFILE_HOSTS.includes(host)) {
+    if (host === 'linkedin.com' ? ['in', 'company', 'pub'].includes(segs[0]) && segs[1] : !NOT_HANDLE.includes(segs[0] || '') || (host === 'scholar.google.com' && u.searchParams.get('user'))) return null;
+  } else if (PROFILE_SUBS.some(p => host.endsWith('.' + p))) return null;
+  if (SEARCH_HOST.test(host) || segs[0] === 'search') return 'Це посилання на пошук. Потрібен ваш профіль або сайт.';
+  if (!PROFILE_HOSTS.includes(host) && nameInHost(host, name)) return null;
+  return 'Це не схоже на ваш профіль чи сайт';
+}
+
 /* ---------- Реєстрація фахівця: 5 кроків ---------- */
 const EXPERT_STEPS = ['Обліковий запис', 'Експертиза', 'Кваліфікація і перевірка', 'Ціна і графік', 'Підтвердження'];
 const MAX_FILE = 10 * 1024 * 1024;
@@ -1452,6 +1490,7 @@ const WIZ = {
       <div class="card"><strong>AI визначив напрям:</strong> ${esc(catName(d.cat))}${d.secondary ? ` <span class="hint">(також ${esc(catName(d.secondary))})</span>` : ''}
         <br><span class="hint">Ключові теми: ${d.tags.map(esc).join(', ') || 'не знайдено'}. Не той напрям? Поверніться на крок назад і уточніть опис.</span></div>
       <label for="w_edu">Освіта</label>
+      <p class="hint">Заклад і ступінь або спеціальність. Курси і самоосвіта теж підходять.</p>
       <input id="w_edu" type="text" value="${esc(d.education)}"><div id="w_eduErr" class="error"></div>
       <label for="w_qual">Документи про кваліфікацію</label>
       <p class="hint">Диплом, сертифікати, ліцензія чи свідоцтво. PDF, JPG або PNG, до 10 МБ кожен.</p>
@@ -1462,6 +1501,7 @@ const WIZ = {
       <input id="w_id" type="file" accept=".pdf,.jpg,.jpeg,.png">
       <ul class="files" id="w_idList"></ul><div id="w_idErr" class="error"></div>
       <label for="w_link">Профіль або портфоліо <span class="hint">(необов'язково)</span></label>
+      <p class="hint">Профіль у LinkedIn, GitHub, Behance, соцмережі чи Telegram, або ваш сайт з ім'ям чи прізвищем в адресі.</p>
       <input id="w_link" type="url" value="${esc(d.link)}"><div id="w_linkErr" class="error"></div>
       <p class="hint">У прототипі файли нікуди не надсилаються: зберігаються лише їхні назви.</p>`,
     bind(m, d) {
@@ -1495,10 +1535,11 @@ const WIZ = {
     validate(m, d) {
       this.collect(m, d);
       const res = { errs: [], first: [] };
-      check(d.education.length >= 3, 'w_edu', 'Вкажіть освіту', m, res);
+      check(d.education.length >= 3 && eduOk(d.education), 'w_edu', d.education.length ? 'Не схоже на освіту. Приклад: «КНЕУ, магістр економіки»' : 'Вкажіть освіту', m, res);
       check(d.qualFiles.length > 0, 'w_qual', 'Додайте хоча б один документ про кваліфікацію', m, res);
       check(!!d.idFile, 'w_id', 'Додайте документ, що посвідчує особу', m, res);
-      check(!d.link || /^https?:\/\/[^\s.]+\.\S+$/i.test(d.link), 'w_link', 'Посилання має починатися з http:// або https://', m, res);
+      const lp = d.link ? linkProblem(d.link, d.name) : null;
+      check(!lp, 'w_link', lp || '', m, res);
       return res;
     },
   },
