@@ -598,7 +598,7 @@ PAGES.home = m => {
       <li><strong>Поговоріть 15 хвилин.</strong> Відеозв'язок у браузері, після розмови підсумок у кабінеті.</li>
     </ol>
     <div class="grid">
-      <div class="card"><h3>Зараз на платформі</h3><p>${experts.length} перевірених фахівців у ${active.length} напрямах. Нові напрями з'являються разом із фахівцями.</p></div>
+      <div class="card"><h3>Зараз на платформі</h3><p>${(v => v === experts.length ? `${v} перевірених фахівців у ${active.length} напрямах` : `${experts.length} фахівців у ${active.length} напрямах, з них ${v} перевірених`)(experts.filter(e => e.verified).length)}. Нові напрями з'являються разом із фахівцями.</p></div>
       <div class="card"><h3>Приватність</h3><p>Розмова не записується. Опис питання бачить лише обраний фахівець.</p></div>
       <div class="card"><h3>Для фахівців</h3><p>Заробляйте на коротких консультаціях без пошуку клієнтів. Ціну встановлюєте самі, комісія платформи 20%.</p><a href="#/become-expert">Стати фахівцем →</a></div>
     </div>
@@ -1380,14 +1380,14 @@ function renderWizard(m) {
   const d = db.expertDraft, step = d.step;
   m.innerHTML = `
     <h2>Реєстрація фахівця</h2>
-    <p class="hint">Кожну заявку перевіряють вручну, тому клієнти можуть довіряти профілям. Займе 5–7 хвилин, чернетка зберігається автоматично.</p>
+    <p class="hint">У демо заявку схвалюють одразу, і профіль отримує позначку «без перевірки (демо)». У робочій версії кожну заявку перевірятиме модератор. Займе 5–7 хвилин, чернетка зберігається автоматично.</p>
     <ol class="wsteps">${EXPERT_STEPS.map((s, i) => `<li class="${i + 1 < step ? 'done' : i + 1 === step ? 'current' : ''}" ${i + 1 === step ? 'aria-current="step"' : ''}>${i + 1}. ${s}</li>`).join('')}</ol>
     <h3>Крок ${step} з ${EXPERT_STEPS.length}: ${EXPERT_STEPS[step - 1]}</h3>
     <form id="wf" novalidate>
       ${WIZ[step].html(d)}
       <div class="actions">
         ${step > 1 ? '<button type="button" id="wBack">Назад</button>' : ''}
-        <button type="button" class="primary" data-submit>${step < EXPERT_STEPS.length ? 'Далі' : 'Надіслати на перевірку'}</button>
+        <button type="button" class="primary" data-submit>${step < EXPERT_STEPS.length ? 'Далі' : 'Надіслати заявку'}</button>
       </div>
     </form>`;
   const form = $('#wf', m);
