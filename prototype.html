@@ -327,6 +327,9 @@ function wordsFor(text, catIds, limit = 6) {
   }
   return out.slice(0, limit);
 }
+// Смайли не рахуються як текст. Слово: дві і більше літер, без трьох однакових підряд («ауууу» не слово).
+const noEmoji = t => String(t).replace(/[\p{Extended_Pictographic}\p{Emoji_Modifier}\u200d\ufe0f]/gu, ' ').replace(/\s+/g, ' ').trim();
+const realWords = t => (noEmoji(t).toLowerCase().match(/\p{L}{2,}/gu) || []).filter(w => !/(\p{L})\1\1/u.test(w));
 function analyzeRequest(text, about = '', excluded = []) {
   const cat = categorize(text, about, excluded);
   const t = norm(text);
@@ -335,7 +338,7 @@ function analyzeRequest(text, about = '', excluded = []) {
   let budget = null;
   const bm = t.match(/(\d[\d\s]{1,6})\s*(?:грн|гривень|гривні|гривня|₴)/u) || t.match(/бюджет\D{0,20}(\d{2,5})/u);
   if (bm) { const n = parseInt(bm[1].replace(/\s/g, ''), 10); if (n >= 50 && n <= 100000) budget = n; }
-  const clean = String(text).replace(/\s+/g, ' ').trim();
+  const clean = noEmoji(text);
   const sentences = clean.split(/(?<=[.!?])\s+/).filter(Boolean);
   const question = trunc(sentences.find(s => s.endsWith('?')) || sentences[0] || clean, 180);
   return {
@@ -809,13 +812,14 @@ PAGES.ask = m => {
     </form>`;
   const form = $('#f', m), ta = $('#text', m), count = $('#count', m);
   const MIN = 30;
-  const upd = () => { const n = ta.value.trim().length; count.textContent = n < MIN ? `${n} / ще ${MIN - n} симв.` : `${n} симв. ✓`; };
+  const upd = () => { const n = noEmoji(ta.value).length; count.textContent = n < MIN ? `${n} / ще ${MIN - n} симв.` : `${n} симв. ✓`; };
   upd();
   // Чернетка зберігається, щоб після заповнення профілю текст не загубився
   ta.addEventListener('input', () => { upd(); flow.draft = ta.value; saveFlow(); });
   bindSubmit(form, () => {
     const v = ta.value.trim();
-    if (v.length < MIN) { setErr('textErr', `Опишіть трохи детальніше: щонайменше ${MIN} символів`, ta); return fail(['text'], [ta], 'опис'); }
+    if (noEmoji(v).length < MIN) { setErr('textErr', `Опишіть трохи детальніше: щонайменше ${MIN} символів`, ta); return fail(['text'], [ta], 'опис'); }
+    if (realWords(v).length < 4) { setErr('textErr', 'Опишіть питання словами: що сталося і що хочете дізнатися', ta); return fail(['text_words'], [ta], 'опис'); }
     setErr('textErr', '', ta);
     // Без профілю заявку не приймаємо: показуємо помилку з посиланням на профіль
     if (!me()) {
@@ -884,7 +888,7 @@ function showAnalysis(m) {
     $('#edit', m).onclick = () => goBack('/ask');
     bindSubmit($('#cf', m), () => {
       const ta = $('#clar', m), v = ta.value.trim();
-      if (v.length < 10) { setErr('clarErr', 'Напишіть хоча б одне речення', ta); return fail(['clarification'], [ta], 'уточнення'); }
+      if (noEmoji(v).length < 10 || realWords(v).length < 2) { setErr('clarErr', 'Напишіть хоча б одне речення', ta); return fail(['clarification'], [ta], 'уточнення'); }
       if (wrong && a.primary) flow.excluded.push(a.primary);
       flow.clarifications.push(v);
       flow.analysis = null; flow.clarifyMode = null;
