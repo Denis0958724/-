@@ -3,3 +3,5 @@ data/
 .env
 ai/train/parity.json
 __pycache__/
+install.log
+server.log
