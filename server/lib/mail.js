@@ -1,9 +1,15 @@
 // Відправка листів. Gmail через пароль застосунку (SMTP). Без налаштувань листи не відправляються,
 // і сервер так і каже, а не вдає успіх.
 'use strict';
+// Сайт відкритий лише з цього комп'ютера, якщо сервер слухає петлю (127.0.0.1 або ::1).
+const LOCAL = /^(127\.|::1$|localhost$)/.test(process.env.HOST || '127.0.0.1');
+// Поки Gmail не налаштовано, на своєму комп'ютері друкуємо код у вікні сервера,
+// щоб реєстрація працювала. На чужій адресі листи просто не йдуть, як і раніше.
 const MODE = process.env.TEST_MODE === '1' ? 'test'
   : (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) ? 'gmail'
-  : process.env.MAIL_MODE === 'log' ? 'log' : 'off';
+  : process.env.MAIL_MODE === 'log' ? 'log'
+  : process.env.MAIL_MODE === 'off' ? 'off'
+  : LOCAL ? 'log' : 'off';
 
 let transport = null;
 if (MODE === 'gmail') {
@@ -20,7 +26,7 @@ async function send({ to, subject, text, html }) {
   if (MODE === 'off') { const e = new Error('mail_off'); e.code = 'MAIL_OFF'; throw e; }
   if (MODE === 'test') { captured.push({ to, subject, text, at: Date.now() }); return { id: 'test' }; }
   if (MODE === 'log') {
-    console.log(`\n[РЕЖИМ РОЗРОБКИ, лист НЕ відправлено]\nКому: ${to}\nТема: ${subject}\n${text}\n`);
+    console.log(`\n---------- РЕЖИМ РОЗРОБКИ: лист не відправлено ----------\nКому: ${to}\nТема: ${subject}\n${text}\n--------------------------------------------------------\n`);
     return { id: 'log' };
   }
   const r = await transport.sendMail({ from: FROM(), to, subject, text, html });

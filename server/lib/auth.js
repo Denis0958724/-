@@ -54,7 +54,7 @@ async function issueCode(email, purpose, payload, ip) {
     });
   } catch (e) {
     store.raw.prepare('DELETE FROM codes WHERE id = ?').run(id);
-    if (e.code === 'MAIL_OFF') return { error: 'Відправка листів не налаштована на сервері. Код не відправлено.', status: 503 };
+    if (e.code === 'MAIL_OFF') return { error: 'Пошту на сервері ще не налаштовано, тому код не надіслано. Див. server/README.md, розділ «Пошта».', status: 503 };
     console.error('[mail] помилка відправки:', e.code || e.name);
     return { error: 'Не вдалося відправити лист. Перевірте адресу або спробуйте пізніше.', status: 502 };
   }

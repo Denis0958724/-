@@ -48,7 +48,13 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, HOST, async () => {
   console.log(`Askly: http://localhost:${PORT}`);
-  console.log(`Пошта: ${await mail.verify()}${mail.MODE === 'off' ? ' (листи не відправляються, див. README, розділ «Пошта»)' : ''}`);
+  const mailState = await mail.verify();
+  console.log(`Пошта: ${mailState}${mail.MODE === 'log' ? ' (режим розробки: Gmail не налаштовано, код для входу друкується тут, у цьому вікні. Як підключити справжні листи, див. README, розділ «Пошта»)'
+    : mail.MODE === 'off' ? ' (листи не відправляються, див. README, розділ «Пошта»)' : ''}`);
+  if (String(mailState).startsWith('gmail_error')) {
+    console.log('Gmail не прийняв дані з .env. Перевірте GMAIL_USER і GMAIL_APP_PASSWORD: потрібен пароль застосунку з 16 символів, а не пароль від акаунта.');
+    console.log('Щоб поки працювати без пошти, поставте в .env рядок MAIL_MODE=log: код для входу друкуватиметься тут.');
+  }
   if (nTest) console.log(`Тестових фахівців: ${nTest} (прибрати: lib/testExperts.js, ENABLED = false)`);
   console.log(`Модель пошуку: ${search.info.features} ознак, точність на тестовому наборі ${Math.round(search.info.testAccuracy * 100)}%`);
 });

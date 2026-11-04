@@ -760,14 +760,20 @@ PAGES.noServer = m => {
 // Блок «введіть код з листа». after(state) викликається після успішної перевірки.
 function codeStep(box, { email, mode, payload, after, resendIn = 60000, extraHeaders }) {
   let left = Math.ceil(resendIn / 1000), timer = null;
+  // Поки Gmail не налаштовано, сервер друкує код у своєму вікні. Пишемо про це прямо, а не вдаємо, що лист пішов.
+  const devMail = db.server && db.server.mail === 'log';
   box.hidden = false;
   box.innerHTML = `
-    <div class="notice" role="status">Ми надіслали 6-значний код на <strong>${esc(email)}</strong>. Він діє 10 хвилин.</div>
-    <label for="code">Код з листа</label>
+    <div class="notice" role="status">${devMail
+      ? 'Пошту на сервері ще не налаштовано, тому лист не пішов. Код надруковано у вікні сервера, шукайте рядок «РЕЖИМ РОЗРОБКИ». Код діє 10 хвилин.'
+      : `Ми надіслали 6-значний код на <strong>${esc(email)}</strong>. Він діє 10 хвилин.`}</div>
+    <label for="code">${devMail ? 'Код з вікна сервера' : 'Код з листа'}</label>
     <input id="code" class="short" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6">
     <div id="codeErr" class="error"></div>
     <div class="actions"><button type="button" class="primary" id="codeOk">Підтвердити</button><button type="button" id="resend" disabled>Надіслати код ще раз</button></div>
-    <p class="hint">Листа немає? Перевірте папку «Спам» і чи правильно вказано адресу.</p>`;
+    <p class="hint">${devMail
+      ? 'Щоб коди приходили на пошту, додайте Gmail у файл server/.env: README.md, розділ «Пошта».'
+      : 'Листа немає? Перевірте папку «Спам» і чи правильно вказано адресу.'}</p>`;
   const inp = $('#code', box), resend = $('#resend', box);
   const tick = () => {
     if (left > 0) { resend.textContent = `Надіслати код ще раз (${left} с)`; resend.disabled = true; left--; }
@@ -1927,7 +1933,7 @@ PAGES.mail = m => {
     <h2>Пошта</h2>
     <p class="hint">${db.server.mail === 'gmail' ? `Листи надсилаються на ${esc(u.email)}. Тут їхні копії.`
       : db.server.mail === 'off' ? 'Відправку листів на сервері ще не налаштовано, тому листи поки не надсилаються. Події чекають у черзі.'
-      : 'Сервер у режимі розробки: листи записуються, але не надсилаються.'}</p>
+      : 'Gmail на сервері ще не налаштовано, тому листи не надсилаються, а друкуються у вікні сервера. Тут їхні копії.'}</p>
     ${pending.length ? `<p class="hint">Подій у черзі: ${pending.length}.${last && Date.now() - last < DAY ? ` Наступний лист не раніше ${esc(fmtDateTime(last + DAY))}: не більше одного листа на добу.` : ''}</p>` : ''}
     ${letters.length ? letters.map(mm => `<div class="card mail" data-mail="${mm.id}">
         <div class="row"><strong>${esc(mm.subject)}</strong><span class="hint">${esc(fmtDateTime(mm.sentAt))}</span></div>
