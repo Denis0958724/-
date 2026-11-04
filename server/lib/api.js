@@ -28,7 +28,7 @@ const cleanUser = u => u && ({ id: u.id, type: u.type, name: u.name, email: u.em
 // Публічна анкета: без пошти, телефону, пароля і документів
 const publicExpert = e => ({ id: e.id, name: e.name, cat: e.cat, secondary: e.secondary || null, tags: e.tags || [], about: e.about, position: e.position,
   years: e.years, level: e.level, price: e.price, days: e.days, from: e.from, to: e.to, tz: e.tz, status: e.status, submittedAt: e.submittedAt,
-  docsChecked: !!(e.docs && e.docs.allOk) });
+  docsChecked: !!(e.docs && e.docs.allOk), rating: e.rating || null, reviews: e.reviews || 0, test: !!e.test });
 const ownExpert = e => ({ ...publicExpert(e), email: e.email, phone: e.phone, education: e.education, link: e.link,
   docs: (e.docs && e.docs.list || []).map(d => ({ kind: d.kind, name: d.name, ok: d.ok })) });
 
@@ -226,6 +226,47 @@ on('POST', '/api/analyze', async ({ req, sess }) => {
   const a = search.analyze(text, pool, excluded);
   a.ranking = search.rank(text, pool);
   return a;
+});
+
+// Фахівці для головної. Є профіль чи історія: найближчі за змістом (власна модель). Немає: найкращі за рейтингом.
+on('GET', '/api/recommendations', async ({ sess }) => {
+  const u = sess && sess.user;
+  const clientId = u && (u.type === 'client' ? u.id : u.clientId);
+  const ownExpertId = u && (u.type === 'expert' ? u.id : u.expertId);
+  const pool = [...demo.list(), ...store.all('experts', "status IN ('approved','auto_approved')").map(e => ({ ...publicExpert(e), bio: e.about, focus: (e.tags || []).map(t => [t, t]) }))]
+    .filter(e => e.id !== ownExpertId);
+  // Рейтинг з поправкою на кількість відгуків: 5.0 з одного відгуку не обганяє 4.8 з п'ятдесяти
+  const stars = e => ((e.rating || 0) * (e.reviews || 0) + 4.3 * 5) / ((e.reviews || 0) + 5);
+  const past = clientId ? store.all('bookings', 'client_id = ?', clientId).sort((a, b) => b.at - a.at) : [];
+  const subs = u ? store.all('subscriptions').filter(s => s.userId === clientId) : [];
+  const parts = [];
+  if (u && u.about) parts.push(u.about);
+  for (const b of past.slice(0, 5)) parts.push(b.request.text, b.summaryText || '');
+  for (const s of subs.slice(0, 3)) parts.push(s.text);
+  const text = parts.filter(Boolean).join('. ');
+  const seen = new Set(past.map(b => b.expertId));
+  let items, mode = 'best';
+  if (R.realWords(text).length >= 3) {
+    mode = past.length || subs.length ? 'history' : 'profile';
+    const rk = new Map(search.rank(text, pool).map(r => [r.id, r]));
+    // Лише фахівці з тем, які справді близькі до запитів людини
+    items = pool.map(e => {
+      const r = rk.get(e.id);
+      return { e, r, score: r.score * 0.8 + (stars(e) - 4) * 20 };
+    }).filter(x => x.r.topicP >= 15).sort((a, b) => b.score - a.score).slice(0, 4).map(({ e }) => ({
+      id: e.id,
+      reason: `${mode === 'history' ? 'Схоже на ваші минулі питання' : 'Підходить до вашого профілю'}: ${search.CAT_NAMES[e.cat].toLowerCase()}`,
+      before: seen.has(e.id),
+    }));
+    if (!items.length) mode = 'best';
+  }
+  if (mode === 'best') {
+    const perCat = {};
+    items = pool.sort((a, b) => stars(b) - stars(a))
+      .filter(e => (perCat[e.cat] = (perCat[e.cat] || 0) + 1) <= 1)
+      .slice(0, 4).map(e => ({ id: e.id, reason: `Найвищий рейтинг у темі «${search.CAT_NAMES[e.cat]}»`, before: seen.has(e.id) }));
+  }
+  return { mode, items };
 });
 
 on('POST', '/api/subscriptions', async ({ req, sess }) => {

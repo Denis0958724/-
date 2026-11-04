@@ -224,7 +224,7 @@ const me = () => db.users.find(u => u.id === db.currentUserId) || null;
 const myExpertRecord = () => db.experts.find(e => e.id === db.currentUserId) || null;
 
 /* ===================== Стан сценарію ===================== */
-const freshFlow = () => ({ draft: null, text: '', clarifications: [], excluded: [], analysis: null, analysisKey: '', override: false, clarifyMode: null, expertId: null, slot: null, ui: { lvl: '', sort: 'match' }, waitlisted: false });
+const freshFlow = () => ({ draft: null, text: '', clarifications: [], excluded: [], analysis: null, analysisKey: '', override: false, clarifyMode: null, expertId: null, slot: null, ui: { lvl: '', sort: 'match' }, waitlisted: false, preferredExpertId: null });
 let flow = freshFlow();
 // Поточна заявка переживає F5: тримаємо її у сховищі вкладки (sessionStorage).
 // Запис прив'язаний до акаунта, тож після входу іншої людини чужа заявка не з'явиться.
@@ -269,7 +269,7 @@ const realWords = t => (noEmoji(t).toLowerCase().match(/\p{L}{2,}/gu) || []).fil
 const stemOf = w => (w.length > 5 ? w.slice(0, w.length - 2) : w);
 function regToPublic(rec) {
   return {
-    id: rec.id, name: rec.name, cat: rec.cat, level: rec.level, rating: null, reviews: 0, price: rec.price,
+    id: rec.id, name: rec.name, cat: rec.cat, level: rec.level, rating: rec.rating || null, reviews: rec.reviews || 0, price: rec.price, test: !!rec.test,
     position: rec.position, bio: trunc(rec.about, 200), focus: rec.tags.map(w => [stemOf(w), w]),
     days: rec.days, from: rec.from, to: rec.to, mock: false, verified: rec.status === 'approved', status: rec.status,
   };
@@ -335,26 +335,28 @@ function scoreExpert(ex, a, text) {
     if (ex.price <= a.budget) { s += 6; reasons.push({ ok: true, text: `Ціна в межах бюджету (до ${a.budget} грн)` }); }
     else { s -= 15; reasons.push({ ok: false, text: `Дорожче за ваш бюджет на ${ex.price - a.budget} грн` }); }
   }
+  if (ex.id === flow.preferredExpertId) { s += 25; reasons.unshift({ ok: true, text: 'Ви обрали на головній' }); }
   if (ex.rating >= 4.8) { s += 4; reasons.push({ ok: true, text: 'Високий рейтинг' }); }
   else if (ex.rating) s += (ex.rating - 4) * 4;
   return { match: Math.max(5, Math.min(98, Math.round(s))), reasons, nextSlot: ns };
 }
 function rankExperts(a) {
   return allExperts()
-    .filter(ex => ex.id !== db.currentUserId && ex.id !== (me() || {}).expertId && (ex.cat === a.primary || ex.cat === a.secondary || (a.nearest || []).some(n => n.cat === ex.cat)))
+    .filter(ex => ex.id !== db.currentUserId && ex.id !== (me() || {}).expertId && (ex.cat === a.primary || ex.cat === a.secondary || (a.nearest || []).some(n => n.cat === ex.cat) || ex.id === flow.preferredExpertId))
     .map(ex => ({ ex, ...scoreExpert(ex, a, fullText()) }));
 }
 function expertCardHtml(ex, opts = {}) {
   const ns = opts.button ? (opts.nextSlot !== undefined ? opts.nextSlot : nextSlot(ex)) : null;
   return `<div class="card">
     <div class="row">
-      <div><strong>${esc(ex.name)}</strong><span class="badge">${LEVELS[ex.level]}</span><span class="badge">${ex.demo ? 'демо-профіль' : ex.verified ? '✓ перевірено' : 'без перевірки (демо)'}</span></div>
+      <div><strong>${esc(ex.name)}</strong><span class="badge">${LEVELS[ex.level]}</span><span class="badge">${ex.demo ? 'демо-профіль' : ex.test ? 'тестовий профіль' : ex.verified ? '✓ перевірено' : 'без перевірки (демо)'}</span></div>
       <div>${opts.match != null ? `<span class="match">${opts.match}% збіг</span> · ` : ''}<strong>${ex.price} грн</strong> / 15 хв</div>
     </div>
     <p class="hint">${ex.rating ? `★ ${ex.rating} (${ex.reviews} відгуків)` : 'Новий фахівець, відгуків ще немає'}${ex.position ? ' · ' + esc(ex.position) : ''}</p>
     <p style="margin:4px 0">${esc(ex.bio)}</p>
     ${ex.focus.length ? `<p class="hint">Теми: ${unique(ex.focus.map(f => f[1])).map(esc).join(', ')}</p>` : ''}
     ${opts.reasons ? `<ul class="reasons" aria-label="Чому підходить">${opts.reasons.map(r => `<li class="${r.ok ? '' : 'minus'}">${r.ok ? '✓' : '✗'} ${esc(r.text)}</li>`).join('')}</ul>` : ''}
+    ${opts.ask ? `<div class="actions" style="margin-top:6px"><button class="small" data-ask="${ex.id}">Поставити питання цьому фахівцю</button></div>` : ''}
     ${opts.button ? `<div class="row"><span class="hint">Найближчий час: ${ns ? `${ns.label}, ${ns.time}` : 'немає вільних слотів'}</span><button class="small" data-id="${ex.id}">Обрати час</button></div>` : ''}
   </div>`;
 }
@@ -558,6 +560,9 @@ PAGES.home = m => {
     <h1>Коротка консультація з потрібним фахівцем</h1>
     <p>10–15 хвилин розмови і конкретна відповідь. Без пошуку через знайомих і без оплати за цілу годину.</p>
     <div class="actions"><button class="primary" id="cta">Поставити питання</button><button id="ctaExpert">Я фахівець</button></div>
+    <h2 style="margin-top:24px" id="recH">Фахівці</h2>
+    <p class="hint" id="recHint"></p>
+    <div id="recList"><p class="hint">Підбираємо фахівців…</p></div>
     <h2 style="margin-top:24px">Як це працює</h2>
     <ol class="how">
       <li><strong>Опишіть питання своїми словами.</strong> Без анкет і списків: просто розкажіть, що сталося.</li>
@@ -573,6 +578,22 @@ PAGES.home = m => {
     <p class="hint" style="margin-top:12px">Медичні та психологічні консультації на першому етапі не проводимо.</p>`;
   $('#cta', m).onclick = () => { log('cta_ask'); nav('/ask'); };
   $('#ctaExpert', m).onclick = () => { log('cta_expert'); nav('/become-expert'); };
+  // Найкращі або найпідходящі фахівці: рахує сервер власною моделлю за профілем і минулими питаннями
+  const token = renderToken;
+  api('/api/recommendations').then(r => {
+    if (token !== renderToken) return;
+    const list = r.items.map(it => ({ it, ex: findExpert(it.id) })).filter(x => x.ex);
+    $('#recH', m).textContent = r.mode === 'best' ? 'Найкращі фахівці' : 'Фахівці для вас';
+    $('#recHint', m).textContent = { best: 'За рейтингом і відгуками, по одному з кожної теми. Опишіть своє питання, і AI підбере фахівців саме під нього.',
+      profile: 'За вашим профілем. Опишіть питання, і підбір стане точнішим.', history: 'За вашими минулими питаннями і консультаціями.' }[r.mode];
+    $('#recList', m).innerHTML = list.length ? list.map(({ it, ex }) => expertCardHtml(ex, { ask: true,
+      reasons: [{ ok: true, text: it.reason }, ...(it.before ? [{ ok: true, text: 'Ви вже консультувались з цим фахівцем' }] : [])] })).join('')
+      : '<p class="hint">Поки немає фахівців.</p>';
+    m.querySelectorAll('[data-ask]').forEach(b => b.onclick = () => {
+      flow = freshFlow(); flow.preferredExpertId = b.dataset.ask; saveFlow();
+      log('home_pick_expert', b.dataset.ask); nav('/ask');
+    });
+  }).catch(() => { if (token === renderToken) $('#recList', m).innerHTML = '<p class="hint">Не вдалося завантажити фахівців. Оновіть сторінку.</p>'; });
 };
 
 /* ---------- Мій профіль: окрема сторінка; дані з неї автоматично підставляються в заявку ---------- */
@@ -706,6 +727,7 @@ PAGES.ask = m => {
   m.innerHTML = `
     <h2>Опишіть своє питання</h2>
     ${who}
+    ${(pe => pe ? `<div class="notice">Ви обрали фахівця: <strong>${esc(pe.name)}</strong>. Він буде першим у добірці, а AI покаже й інших, якщо тема питання інша. <a href="#/ask" id="unpick">Скасувати вибір</a></div>` : '')(flow.preferredExpertId && findExpert(flow.preferredExpertId))}
     <p class="hint">Своїми словами: що сталося і яку відповідь хочете отримати після розмови. Якщо це важливо, напишіть, коли потрібна консультація і який у вас бюджет.</p>
     <form id="f" novalidate>
       <label for="text">Ваше питання</label>
@@ -716,6 +738,7 @@ PAGES.ask = m => {
       <div class="actions"><button class="primary" type="button" data-submit>Знайти фахівця</button></div>
     </form>`;
   const form = $('#f', m), ta = $('#text', m), count = $('#count', m);
+  if ($('#unpick', m)) $('#unpick', m).onclick = e => { e.preventDefault(); flow.preferredExpertId = null; saveFlow(); render({ silent: true }); };
   const MIN = 30;
   const upd = () => { const n = noEmoji(ta.value).length; count.textContent = n < MIN ? `${n} / ще ${MIN - n} симв.` : `${n} симв. ✓`; };
   upd();
@@ -738,7 +761,7 @@ PAGES.ask = m => {
       try { applyState(await api('/api/auth/switch', { to: 'client' })); log('switch_role', 'client'); }
       catch (e) { setErr('textErr', e.error, ta); return fail(['switch'], [ta], 'заявка'); }
     }
-    if (v !== fullText()) { const ui = flow.ui; flow = freshFlow(); flow.ui = ui; flow.text = v; }
+    if (v !== fullText()) { const ui = flow.ui, pref = flow.preferredExpertId; flow = freshFlow(); flow.ui = ui; flow.preferredExpertId = pref; flow.text = v; }
     flow.draft = null;
     nav('/analysis');
   });
@@ -905,7 +928,7 @@ PAGES.expert = (m, r) => {
   const reviews = ex.mock ? SAMPLE_REVIEWS[parseInt(ex.id.slice(1), 10) % SAMPLE_REVIEWS.length] : [];
   m.innerHTML = `
     <h2>${esc(ex.name)}</h2>
-    <p><span class="badge">${LEVELS[ex.level]}</span><span class="badge">${ex.demo ? 'демо-профіль' : ex.verified ? '✓ перевірено' : 'без перевірки (демо)'}</span> ${ex.rating ? `★ ${ex.rating} (${ex.reviews} відгуків)` : '<span class="hint">Новий фахівець</span>'}</p>
+    <p><span class="badge">${LEVELS[ex.level]}</span><span class="badge">${ex.demo ? 'демо-профіль' : ex.test ? 'тестовий профіль' : ex.verified ? '✓ перевірено' : 'без перевірки (демо)'}</span> ${ex.rating ? `★ ${ex.rating} (${ex.reviews} відгуків)` : '<span class="hint">Новий фахівець</span>'}</p>
     ${ex.position ? `<p class="hint">${esc(ex.position)}</p>` : ''}
     <p>${esc(ex.bio)}</p>
     <p><strong>${ex.price} грн</strong> за 15 хвилин. Ціну встановлює фахівець.</p>

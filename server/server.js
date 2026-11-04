@@ -17,6 +17,8 @@ const api = require('./lib/api');
 const notify = require('./lib/notify');
 const mail = require('./lib/mail');
 const search = require('./ai/search');
+const testExperts = require('./lib/testExperts');
+const nTest = testExperts.sync();
 
 const PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || '127.0.0.1';
@@ -47,6 +49,7 @@ const server = http.createServer(async (req, res) => {
 server.listen(PORT, HOST, async () => {
   console.log(`Мікро-консультації: http://localhost:${PORT}`);
   console.log(`Пошта: ${await mail.verify()}${mail.MODE === 'off' ? ' (листи не відправляються, див. README, розділ «Пошта»)' : ''}`);
+  if (nTest) console.log(`Тестових фахівців: ${nTest} (прибрати: lib/testExperts.js, ENABLED = false)`);
   console.log(`Модель пошуку: ${search.info.features} ознак, точність на тестовому наборі ${Math.round(search.info.testAccuracy * 100)}%`);
 });
 if (process.env.TEST_MODE !== '1') {
