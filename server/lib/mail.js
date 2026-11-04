@@ -13,7 +13,7 @@ if (MODE === 'gmail') {
     auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_APP_PASSWORD },
   });
 }
-const FROM = () => `"${process.env.MAIL_FROM_NAME || 'Мікро-консультації'}" <${process.env.GMAIL_USER || 'no-reply@localhost'}>`;
+const FROM = () => `"${process.env.MAIL_FROM_NAME || 'Askly'}" <${process.env.GMAIL_USER || 'no-reply@localhost'}>`;
 const captured = []; // лише для автоматичних тестів (TEST_MODE=1)
 
 async function send({ to, subject, text, html }) {

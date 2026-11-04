@@ -3,88 +3,301 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Мікро-консультації · прототип</title>
+<title>Askly · прототип</title>
 <style>
-  /* Базові стилі. Розміщення елементів ще не фінальне. */
+  /* ===================== Дизайн-система «Фіолетовий Askly» =====================
+     Кольори, відступи, тіні й радіуси зібрані в змінних нижче. Міняєш колір тут, він
+     міняється на всіх сторінках. Окремих кольорів у розмітці не ставимо. */
+  :root {
+    /* Поверхні */
+    --bg: #edf1f4;          /* фон сторінки, холодний світлий */
+    --surface: #ffffff;     /* картки і головний блок */
+    --surface-2: #eceaf7;   /* лавандова заливка: вкладки, цитати, футер */
+    --surface-3: #ded9f1;   /* наведення на лавандову заливку */
+    /* Текст */
+    --ink: #272339;         /* основний */
+    --ink-2: #5d5873;       /* другорядний: підказки, підписи */
+    --ink-3: #6f6b86;       /* ледь помітний: лічильники, примітки */
+    /* Лінії */
+    --line: #e3e4ee;
+    --line-2: #cbcadc;
+    /* Фіолетовий: дії платформи і посилання */
+    --brand: #6040a3;
+    --brand-700: #4c318a;
+    --brand-300: #b4a4dc;
+    --brand-100: #e1deed;
+    --brand-50: #f0ecfa;
+    /* Малиновий: те, на що варто глянути */
+    --accent: #d6336c;
+    --accent-700: #a81e55;
+    --accent-50: #fce8f0;
+    /* Стани */
+    --ok: #14694a;
+    --ok-bg: #e7f4ee;
+    --ok-line: #9ccdb6;
+    --warn: #7d5a00;
+    --warn-bg: #fdf3da;
+    --warn-line: #e4cd94;
+    --danger: #c0183a;
+    --danger-bg: #fdecef;
+    /* Форма */
+    --r-sm: 8px;
+    --r: 12px;
+    --r-lg: 16px;
+    --pill: 999px;
+    --shadow-1: 0 1px 2px rgba(39, 35, 57, .05);
+    --shadow-2: 0 10px 28px -14px rgba(39, 35, 57, .26), 0 2px 6px rgba(39, 35, 57, .04);
+    --ring: 0 0 0 3px rgba(96, 64, 163, .22);
+    --container: 920px;
+    --fast: .15s ease;
+  }
+
+  /* ===================== Основа ===================== */
   * { box-sizing: border-box; }
-  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 16px; line-height: 1.45; background: #f4f4f4; color: #222; }
-  a { color: #1a4fa0; }
-  header.top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; background: #fff; border-bottom: 1px solid #ccc; padding: 8px 16px; }
-  .brand { font-weight: 700; color: #222; text-decoration: none; }
-  nav.main { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: center; font-size: 15px; }
-  nav.main a { color: #222; }
-  nav.main a[aria-current=page] { font-weight: 700; }
-  #stepsBar { background: #fff; border-bottom: 1px solid #ddd; padding: 6px 16px; }
-  #steps, .wsteps { display: flex; flex-wrap: wrap; gap: 4px; list-style: none; padding: 0; margin: 0; font-size: 13px; }
-  .wsteps { margin: 0 0 12px; }
-  #steps li, .wsteps li { padding: 2px 8px; border: 1px solid #ccc; border-radius: 10px; color: #777; }
-  #steps li.done, .wsteps li.done { background: #e6f2e6; color: #333; }
-  #steps li.current, .wsteps li.current { background: #333; color: #fff; border-color: #333; }
-  .layout { max-width: 860px; margin: 0 auto; padding: 16px; }
-  main { background: #fff; border: 1px solid #ccc; padding: 16px; min-width: 0; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "Inter", system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px; line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    display: flex; flex-direction: column; min-height: 100vh;   /* футер завжди внизу */
+  }
+  a { color: var(--brand); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { color: var(--brand-700); }
+  :focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 4px; }
+  code { font-family: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace; font-size: .92em;
+    background: var(--surface-2); border: 1px solid var(--line); border-radius: 6px; padding: 1px 5px; }
+
+  /* ===================== Шапка ===================== */
+  header.top {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 20px;
+    background: var(--surface); border-bottom: 1px solid var(--line);
+    padding: 12px 24px; position: sticky; top: 0; z-index: 20;
+  }
+  .brand {
+    display: inline-flex; align-items: center; gap: 9px;
+    font-weight: 700; font-size: 20px; letter-spacing: -.02em; color: var(--ink); text-decoration: none;
+  }
+  .brand::before {
+    content: ""; width: 22px; height: 22px; border-radius: 8px; flex: none;
+    background: linear-gradient(140deg, var(--brand) 55%, var(--accent) 55%);
+  }
+  .brand:hover { color: var(--brand); }
+  nav.main { display: flex; flex-wrap: wrap; gap: 2px 4px; align-items: center; font-size: 15px; }
+  nav.main a {
+    color: var(--ink-2); text-decoration: none; padding: 6px 10px; border-radius: var(--r-sm);
+    transition: background var(--fast), color var(--fast);
+  }
+  nav.main a:hover { background: var(--surface-2); color: var(--ink); }
+  nav.main a[aria-current=page] { color: var(--brand); font-weight: 600; background: var(--brand-50); }
+  nav.main .hint { margin: 0 2px 0 6px; }
+
+  /* ===================== Кроки сценарію ===================== */
+  #stepsBar { background: var(--surface); border-bottom: 1px solid var(--line); padding: 10px 24px; }
+  #steps, .wsteps {
+    display: flex; flex-wrap: wrap; gap: 6px; list-style: none; padding: 0; margin: 0;
+    font-size: 13px; line-height: 1.3;
+  }
+  .wsteps { margin: 0 0 20px; }
+  #steps li, .wsteps li {
+    padding: 5px 12px; border: 1px solid var(--line); border-radius: var(--pill);
+    color: var(--ink-3); background: var(--surface);
+  }
+  #steps li.done, .wsteps li.done { background: var(--brand-50); border-color: transparent; color: var(--brand); }
+  #steps li.current, .wsteps li.current { background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 600; }
+
+  /* ===================== Каркас сторінки ===================== */
+  .layout { max-width: var(--container); width: 100%; margin: 0 auto; padding: 24px 20px 8px; flex: 1 0 auto; }
+  main {
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg);
+    padding: 28px 32px 32px; min-width: 0; box-shadow: var(--shadow-2);
+  }
   main:focus { outline: none; }
-  h1, h2 { margin-top: 0; }
+
+  /* ===================== Текст ===================== */
+  h1, h2 { margin-top: 0; letter-spacing: -.02em; line-height: 1.2; }
+  h1 { font-size: clamp(26px, 3.6vw, 34px); margin-bottom: 10px; }
+  h2 { font-size: clamp(20px, 2.4vw, 24px); margin-bottom: 10px; }
+  h3 { margin: 24px 0 8px; font-size: 17px; letter-spacing: -.01em; }
   h1:focus, h2:focus { outline: none; }
-  h3 { margin: 16px 0 8px; font-size: 17px; }
-  label { display: block; margin: 12px 0 4px; font-weight: 600; }
+  p { margin: 0 0 12px; }
+  .hint { font-size: 13.5px; color: var(--ink-2); margin: 2px 0; }
+  .hl { background: var(--brand-100); color: var(--brand-700); padding: 0 6px; border-radius: 6px; white-space: nowrap; }
+
+  /* ===================== Поля ===================== */
+  label { display: block; margin: 18px 0 6px; font-weight: 600; font-size: 14.5px; }
   label.inline { display: inline-block; margin-right: 12px; font-weight: 400; }
-  fieldset { border: 0; padding: 0; margin: 12px 0 0; }
-  legend { font-weight: 600; padding: 0; margin-bottom: 4px; }
-  .radio-col label { display: flex; gap: 6px; align-items: flex-start; font-weight: 400; margin: 6px 0; }
-  .radio-row label { display: inline-flex; gap: 4px; align-items: center; font-weight: 400; margin: 4px 14px 4px 0; }
-  input:not([type=checkbox]):not([type=radio]):not([type=file]), select, textarea { width: 100%; padding: 8px; font: inherit; border: 1px solid #999; background: #fff; }
-  input.short { max-width: 160px; }
+  fieldset { border: 0; padding: 0; margin: 18px 0 0; }
+  legend { font-weight: 600; font-size: 14.5px; padding: 0; margin-bottom: 6px; }
+  .radio-col label { display: flex; gap: 8px; align-items: flex-start; font-weight: 400; margin: 8px 0; }
+  .radio-row label { display: inline-flex; gap: 6px; align-items: center; font-weight: 400; margin: 6px 16px 6px 0; }
+  .radio-col label, .radio-row label { cursor: pointer; }
+  input:not([type=checkbox]):not([type=radio]):not([type=file]), select, textarea {
+    width: 100%; padding: 11px 13px; font: inherit; color: var(--ink);
+    border: 1px solid var(--line-2); border-radius: var(--r-sm); background: var(--surface);
+    transition: border-color var(--fast), box-shadow var(--fast);
+  }
+  input:not([type=checkbox]):not([type=radio]):not([type=file]):focus, select:focus, textarea:focus {
+    outline: none; border-color: var(--brand); box-shadow: var(--ring);
+  }
+  input::placeholder, textarea::placeholder { color: var(--ink-3); }
+  input[type=checkbox], input[type=radio] { accent-color: var(--brand); width: 16px; height: 16px; }
+  input[type=file] { font-size: 14px; }
+  input:not([type=checkbox]):not([type=radio]):not([type=file]), select { max-width: 520px; }
+  input.short { max-width: 170px; }
   label.inline select { width: auto; }
-  textarea { min-height: 110px; resize: vertical; }
-  [aria-invalid=true] { border-color: #b00020 !important; }
-  .hint { font-size: 13px; color: #666; margin: 2px 0; }
-  .error { color: #b00020; font-size: 14px; margin: 4px 0; }
-  .warn { background: #fff4d6; border: 1px solid #e0b84a; padding: 8px; margin: 8px 0; font-size: 14px; }
-  .ok { background: #e6f2e6; border: 1px solid #8bbf8b; padding: 8px; margin: 8px 0; }
-  .notice { background: #eef3fb; border: 1px solid #9db3d6; padding: 8px; margin: 0 0 12px; font-size: 14px; }
-  .actions { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
-  button { font: inherit; padding: 8px 14px; cursor: pointer; border: 1px solid #333; background: #fff; color: #222; }
-  button.primary { background: #333; color: #fff; }
-  button.small { padding: 3px 8px; font-size: 13px; }
-  button:disabled { opacity: .5; cursor: not-allowed; }
-  .card { border: 1px solid #ccc; padding: 12px; margin: 8px 0; }
-  .row { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
-  .tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 12px; }
-  .tabs button[aria-selected=true] { background: #333; color: #fff; }
-  .badge { display: inline-block; font-size: 12px; padding: 1px 6px; border: 1px solid #999; border-radius: 8px; margin-left: 4px; }
-  .slots { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
-  .slot[aria-pressed=true], .star[aria-pressed=true], .role-switch button[aria-pressed=true] { background: #333; color: #fff; }
-  .role-switch { display: inline-flex; gap: 4px; align-items: center; font-size: 14px; }
-  .video { background: #222; color: #eee; height: 240px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; }
+  textarea { min-height: 130px; resize: vertical; line-height: 1.55; }
+  [aria-invalid=true] { border-color: var(--danger) !important; background: var(--danger-bg) !important; }
+  [aria-invalid=true]:focus { box-shadow: 0 0 0 3px rgba(192, 24, 58, .18) !important; }
+
+  /* ===================== Повідомлення ===================== */
+  .error { color: var(--danger); font-size: 14px; margin: 6px 0; font-weight: 500; }
+  .error:empty { margin: 0; }
+  .warn, .ok, .notice {
+    border: 1px solid; border-left-width: 4px; border-radius: var(--r-sm);
+    padding: 12px 14px; margin: 14px 0; font-size: 14.5px;
+  }
+  .warn { background: var(--warn-bg); border-color: var(--warn-line); color: var(--warn); }
+  .ok { background: var(--ok-bg); border-color: var(--ok-line); color: var(--ok); }
+  .notice { background: var(--surface-2); border-color: var(--line); border-left-color: var(--brand); color: var(--ink); margin: 0 0 20px; }
+  .warn strong, .ok strong, .notice strong { color: inherit; }
+  #storageWarn { border-radius: 0; border-left: 0; border-right: 0; }
+
+  /* ===================== Кнопки ===================== */
+  .actions { display: flex; gap: 10px; margin-top: 24px; flex-wrap: wrap; align-items: center; }
+  button {
+    font: inherit; font-weight: 600; font-size: 15px; padding: 10px 18px; cursor: pointer;
+    border: 1px solid var(--line-2); border-radius: var(--r-sm); background: var(--surface); color: var(--ink);
+    transition: background var(--fast), border-color var(--fast), color var(--fast), box-shadow var(--fast), transform var(--fast);
+  }
+  button:hover { background: var(--surface-2); border-color: var(--line-2); }
+  button:active { transform: translateY(1px); }
+  button.primary {
+    background: var(--brand); border-color: var(--brand); color: #fff;
+    box-shadow: 0 1px 2px rgba(39, 35, 57, .14);
+  }
+  button.primary:hover { background: var(--brand-700); border-color: var(--brand-700); }
+  button.small { padding: 6px 12px; font-size: 13.5px; border-radius: 7px; }
+  button:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+  button:disabled:hover { background: var(--surface); }
+  button.primary:disabled:hover { background: var(--brand); }
+
+  /* ===================== Картки ===================== */
+  .card {
+    border: 1px solid var(--line); border-radius: var(--r); background: var(--surface);
+    padding: 18px 20px; margin: 12px 0; box-shadow: var(--shadow-1);
+    transition: border-color var(--fast), box-shadow var(--fast);
+  }
+  .card:hover { border-color: var(--line-2); }
+  .card > :last-child { margin-bottom: 0; }
+  .card .actions { margin-top: 14px; }
+  .row { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: baseline; }
+  .sub-row, .card.hint { background: var(--surface-2); border-color: transparent; box-shadow: none; }
+  .hero {
+    background: linear-gradient(160deg, var(--brand-50), var(--surface) 70%);
+    border: 1px solid var(--line); border-radius: var(--r); padding: 28px 28px 24px; margin-bottom: 28px;
+  }
+  .hero h1 { margin-bottom: 12px; }
+  .hero p { color: var(--ink-2); font-size: 17px; max-width: 48ch; }
+  .hero .actions { margin-top: 20px; }
+
+  /* ===================== Вкладки і чипи ===================== */
+  .tabs {
+    display: flex; flex-wrap: wrap; gap: 4px; margin: 14px 0 20px;
+    background: var(--surface-2); border-radius: var(--r); padding: 4px;
+  }
+  .tabs button { border: 0; background: transparent; color: var(--ink-2); border-radius: var(--r-sm); padding: 8px 14px; box-shadow: none; }
+  .tabs button:hover { background: var(--surface-3); color: var(--ink); }
+  .tabs button[aria-selected=true] { background: var(--surface); color: var(--brand); box-shadow: var(--shadow-1); }
+  .badge {
+    display: inline-block; font-size: 12px; line-height: 1.6; padding: 1px 9px; border: 0; border-radius: var(--pill);
+    margin-left: 6px; background: var(--surface-2); color: var(--ink-2); font-weight: 500; vertical-align: 1px;
+  }
+  .badge.verified { background: var(--ok-bg); color: var(--ok); }
+  .slots { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .slot, .star { border-radius: var(--pill); }
+  .slot[aria-pressed=true], .star[aria-pressed=true], .role-switch button[aria-pressed=true] {
+    background: var(--brand); border-color: var(--brand); color: #fff;
+  }
+  .slot[aria-pressed=true]:hover, .star[aria-pressed=true]:hover, .role-switch button[aria-pressed=true]:hover { background: var(--brand-700); }
+  .role-switch { display: inline-flex; gap: 4px; align-items: center; font-size: 14px; color: var(--ink-2); }
+  .role-switch button { padding: 5px 11px; }
+
+  /* ===================== Зміст сторінок ===================== */
+  .video {
+    background: radial-gradient(circle at 50% 35%, #3b3159, #211c33 70%); color: #ece9f5;
+    height: 260px; border-radius: var(--r); display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 8px; text-align: center; padding: 16px;
+  }
   table { border-collapse: collapse; width: 100%; font-size: 15px; }
-  td { border-bottom: 1px solid #eee; padding: 4px 0; vertical-align: top; }
-  td:first-child { color: #666; width: 38%; padding-right: 8px; }
-  ul.reasons { margin: 6px 0; padding-left: 0; list-style: none; font-size: 14px; }
-  ul.reasons li.minus { color: #8a3b00; }
-  ul.files { list-style: none; padding: 0; margin: 4px 0; font-size: 14px; }
-  ul.files li { display: flex; gap: 8px; align-items: center; }
-  .match { font-weight: 700; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; }
+  td { border-bottom: 1px solid var(--line); padding: 9px 0; vertical-align: top; }
+  tr:last-child td { border-bottom: 0; }
+  td:first-child { color: var(--ink-2); width: 38%; padding-right: 12px; }
+  ul.reasons { margin: 10px 0; padding-left: 0; list-style: none; font-size: 14px; color: var(--ink-2); }
+  ul.reasons li { padding: 1px 0; }
+  ul.reasons li.minus { color: var(--accent-700); }
+  ul.files { list-style: none; padding: 0; margin: 8px 0; font-size: 14px; }
+  ul.files li { display: flex; gap: 10px; align-items: center; padding: 3px 0; }
+  .match { font-weight: 700; color: var(--accent); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
   .grid .card { margin: 0; }
   .grid .card h3 { margin-top: 0; }
-  footer.site { max-width: 860px; margin: 0 auto; padding: 4px 16px 24px; font-size: 13px; line-height: 1.4; color: #555; }
-  footer.site h2 { font-size: 14px; margin: 16px 0 8px; color: #333; }
-  footer.site h3 { font-size: 13px; margin: 0 0 4px; color: #333; }
+  #recList { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 12px; align-items: start; }
+  #recList .card { margin: 0; height: 100%; }
+
+  /* ===================== Футер ===================== */
+  footer.site {
+    max-width: var(--container); width: 100%; flex: none; margin: 28px auto 0; padding: 24px 24px 28px;
+    font-size: 13.5px; line-height: 1.5; color: var(--ink-2);
+    background: var(--surface-2); border-radius: var(--r-lg) var(--r-lg) 0 0;
+  }
+  footer.site h2 { font-size: 14px; margin: 0 0 12px; color: var(--ink); letter-spacing: .02em; text-transform: uppercase; }
+  footer.site h3 { font-size: 13.5px; margin: 0 0 4px; color: var(--ink); }
   footer.site p { margin: 0 0 4px; }
-  footer.site .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px 20px; }
+  footer.site a { font-weight: 500; }
+  footer.site .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px 24px; }
   footer.site ol.how { list-style: none; counter-reset: how; padding: 0; margin: 0; }
   footer.site ol.how li { counter-increment: how; }
-  footer.site ol.how li strong::before { content: counter(how) ". "; }
-  footer.site ol.how strong { display: block; color: #333; }
-  footer.site .info { border-top: 1px solid #ddd; margin-top: 16px; padding-top: 12px; }
-  footer.site .legal { border-top: 1px solid #ddd; margin-top: 12px; padding-top: 8px; color: #777; font-size: 12px; }
-  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #999; border-top-color: transparent; border-radius: 50%; animation: spin .8s linear infinite; vertical-align: -2px; margin-right: 6px; }
+  footer.site ol.how li strong::before { content: counter(how); display: inline-flex; align-items: center; justify-content: center;
+    width: 20px; height: 20px; margin-right: 8px; border-radius: var(--pill);
+    background: var(--brand); color: #fff; font-size: 12px; }
+  footer.site ol.how strong { display: flex; align-items: center; color: var(--ink); margin-bottom: 2px; }
+  footer.site .info { border-top: 1px solid var(--line-2); margin-top: 24px; padding-top: 20px; }
+  footer.site .legal { border-top: 1px solid var(--line-2); margin-top: 20px; padding-top: 12px; color: var(--ink-3); font-size: 12.5px; }
+
+  /* ===================== Дрібниці ===================== */
+  .spinner {
+    display: inline-block; width: 14px; height: 14px; border: 2px solid var(--brand-300);
+    border-top-color: transparent; border-radius: 50%; animation: spin .8s linear infinite;
+    vertical-align: -2px; margin-right: 8px;
+  }
   @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ===================== Вузький екран ===================== */
+  @media (max-width: 700px) {
+    header.top { padding: 10px 16px; }
+    nav.main { font-size: 14px; gap: 2px; }
+    nav.main a { padding: 5px 8px; }
+    #stepsBar { padding: 8px 16px; overflow-x: auto; }
+    #steps { flex-wrap: nowrap; }
+    #steps li { white-space: nowrap; }
+    .layout { padding: 16px 12px 4px; }
+    main { padding: 20px 18px 24px; border-radius: var(--r); }
+    .hero { padding: 20px 18px; margin-bottom: 20px; }
+    .hero p { font-size: 16px; }
+    .card { padding: 16px; }
+    footer.site { padding: 20px 18px 24px; margin-top: 20px; }
+    .actions button { flex: 1 1 auto; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+  }
 </style>
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="#/">Мікро-консультації</a>
+  <a class="brand" href="#/">Askly</a>
   <nav class="main" id="nav" aria-label="Головне меню"></nav>
 </header>
 <div id="stepsBar" hidden><ol id="steps" aria-label="Кроки"></ol></div>
@@ -359,7 +572,7 @@ function expertCardHtml(ex, opts = {}) {
   const ns = opts.button ? (opts.nextSlot !== undefined ? opts.nextSlot : nextSlot(ex)) : null;
   return `<div class="card">
     <div class="row">
-      <div><strong>${esc(ex.name)}</strong><span class="badge">${LEVELS[ex.level]}</span><span class="badge">${ex.demo ? 'демо-профіль' : ex.test ? 'тестовий профіль' : ex.verified ? '✓ перевірено' : 'без перевірки (демо)'}</span></div>
+      <div><strong>${esc(ex.name)}</strong><span class="badge">${LEVELS[ex.level]}</span><span class="badge${!ex.demo && !ex.test && ex.verified ? ' verified' : ''}">${ex.demo ? 'демо-профіль' : ex.test ? 'тестовий профіль' : ex.verified ? '✓ перевірено' : 'без перевірки (демо)'}</span></div>
       <div>${opts.match != null ? `<span class="match">${opts.match}% збіг</span> · ` : ''}<strong>${ex.price} грн</strong> / 15 хв</div>
     </div>
     <p class="hint">${ex.rating ? `★ ${ex.rating} (${ex.reviews} відгуків)` : 'Новий фахівець, відгуків ще немає'}${ex.position ? ' · ' + esc(ex.position) : ''}</p>
@@ -585,10 +798,12 @@ function serverErr(e, map, fallbackId) {
 
 PAGES.home = m => {
   m.innerHTML = `
-    <h1>Коротка консультація з потрібним фахівцем</h1>
-    <p>10–15 хвилин розмови і конкретна відповідь. Без пошуку через знайомих і без оплати за цілу годину.</p>
-    <div class="actions"><button class="primary" id="cta">Поставити питання</button><button id="ctaExpert">Я фахівець</button></div>
-    <h2 style="margin-top:24px" id="recH">Фахівці</h2>
+    <div class="hero">
+      <h1>Коротка консультація з потрібним фахівцем</h1>
+      <p><span class="hl">10–15 хвилин</span> розмови і конкретна відповідь. Без пошуку через знайомих і без оплати за цілу годину.</p>
+      <div class="actions"><button class="primary" id="cta">Поставити питання</button><button id="ctaExpert">Я фахівець</button></div>
+    </div>
+    <h2 id="recH">Фахівці</h2>
     <p class="hint" id="recHint"></p>
     <div id="recList"><p class="hint">Підбираємо фахівців…</p></div>
 `;
@@ -944,7 +1159,7 @@ PAGES.expert = (m, r) => {
   const reviews = ex.mock ? SAMPLE_REVIEWS[parseInt(ex.id.slice(1), 10) % SAMPLE_REVIEWS.length] : [];
   m.innerHTML = `
     <h2>${esc(ex.name)}</h2>
-    <p><span class="badge">${LEVELS[ex.level]}</span><span class="badge">${ex.demo ? 'демо-профіль' : ex.test ? 'тестовий профіль' : ex.verified ? '✓ перевірено' : 'без перевірки (демо)'}</span> ${ex.rating ? `★ ${ex.rating} (${ex.reviews} відгуків)` : '<span class="hint">Новий фахівець</span>'}</p>
+    <p><span class="badge">${LEVELS[ex.level]}</span><span class="badge${!ex.demo && !ex.test && ex.verified ? ' verified' : ''}">${ex.demo ? 'демо-профіль' : ex.test ? 'тестовий профіль' : ex.verified ? '✓ перевірено' : 'без перевірки (демо)'}</span> ${ex.rating ? `★ ${ex.rating} (${ex.reviews} відгуків)` : '<span class="hint">Новий фахівець</span>'}</p>
     ${ex.position ? `<p class="hint">${esc(ex.position)}</p>` : ''}
     <p>${esc(ex.bio)}</p>
     <p><strong>${ex.price} грн</strong> за 15 хвилин. Ціну встановлює фахівець.</p>
@@ -1070,7 +1285,7 @@ PAGES.session = (m, r) => {
     <div class="video">
       <div>📹 ${esc(b.expertName)}</div>
       <div id="timer">0:00 / 15:00</div>
-      <div class="hint" style="color:#aaa">Імітація відеозв'язку · запис вимкнено</div>
+      <div class="hint" style="color:var(--brand-300)">Імітація відеозв'язку · запис вимкнено</div>
     </div>
     <div class="card"><strong>Ваше питання:</strong> ${esc(b.request.question)}</div>
     <div class="actions"><button id="mic" aria-pressed="false">Вимкнути мікрофон</button><button class="primary" id="end">Завершити консультацію</button></div>
