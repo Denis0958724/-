@@ -47,7 +47,7 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, HOST, async () => {
-  console.log(`Мікро-консультації: http://localhost:${PORT}`);
+  console.log(`Askly: http://localhost:${PORT}`);
   console.log(`Пошта: ${await mail.verify()}${mail.MODE === 'off' ? ' (листи не відправляються, див. README, розділ «Пошта»)' : ''}`);
   if (nTest) console.log(`Тестових фахівців: ${nTest} (прибрати: lib/testExperts.js, ENABLED = false)`);
   console.log(`Модель пошуку: ${search.info.features} ознак, точність на тестовому наборі ${Math.round(search.info.testAccuracy * 100)}%`);

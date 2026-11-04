@@ -49,8 +49,8 @@ async function issueCode(email, purpose, payload, ip) {
   try {
     await mail.send({
       to: email, subject: `${PURPOSE_SUBJECT[purpose]}: ${code}`,
-      text: `Ваш код: ${code}\n\nВін діє 10 хвилин і лише один раз. Якщо це були не ви, просто проігноруйте лист.\n\nМікро-консультації`,
-      html: `<p>Ваш код:</p><p style="font-size:24px;font-weight:bold;letter-spacing:4px">${code}</p><p>Він діє 10 хвилин і лише один раз. Якщо це були не ви, просто проігноруйте лист.</p><p>Мікро-консультації</p>`,
+      text: `Ваш код: ${code}\n\nВін діє 10 хвилин і лише один раз. Якщо це були не ви, просто проігноруйте лист.\n\nAskly`,
+      html: `<p>Ваш код:</p><p style="font-size:24px;font-weight:bold;letter-spacing:4px">${code}</p><p>Він діє 10 хвилин і лише один раз. Якщо це були не ви, просто проігноруйте лист.</p><p>Askly</p>`,
     });
   } catch (e) {
     store.raw.prepare('DELETE FROM codes WHERE id = ?').run(id);

@@ -41,7 +41,7 @@ function body(evs) {
   const lines = evs.map(e => e.type === 'expert'
     ? `Новий фахівець: ${e.expertName}, тема «${CAT_NAMES[e.cat] || e.cat}», ${e.price} грн за 15 хв.\nПодивитись: ${base}/#/sub/${e.subId}`
     : `Консультація з фахівцем ${e.expertName}: статус «${CONSULT_STATUS[e.status]}»${e.at ? `, ${kyiv(e.at)} (час Києва)` : ''}.\nСторінка консультації: ${base}/#/consult/${e.bookingId}`);
-  return lines.join('\n\n') + '\n\nНе більше одного листа на добу. Мікро-консультації';
+  return lines.join('\n\n') + '\n\nНе більше одного листа на добу. Askly';
 }
 
 let running = false;

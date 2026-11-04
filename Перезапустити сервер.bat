@@ -1,6 +1,6 @@
 @echo off
 chcp 65001 >nul
-title Мікро-консультації: сервер
+title Askly: сервер
 cd /d "%~dp0server"
 set LOG=%~dp0server\install.log
 echo [%date% %time%] Перезапуск >> "%LOG%"
