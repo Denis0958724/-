@@ -5,45 +5,49 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Askly · прототип</title>
 <style>
-  /* ===================== Дизайн-система «Глибокий зелений і корал» =====================
+  /* ===================== Дизайн-система «Фіолетовий Askly» =====================
      Кольори, відступи, тіні й радіуси зібрані в змінних нижче. Міняєш колір тут, він
      міняється на всіх сторінках. Окремих кольорів у розмітці не ставимо. */
   :root {
     /* Поверхні */
-    --bg: #f3f5f2;          /* фон сторінки */
+    --bg: #edf1f4;          /* фон сторінки, холодний світлий */
     --surface: #ffffff;     /* картки і головний блок */
-    --surface-2: #eef2ed;   /* спокійна заливка: вкладки, таблиці, футер */
-    --surface-3: #e4eae2;   /* наведення на спокійну заливку */
+    --surface-2: #eceaf7;   /* лавандова заливка: вкладки, цитати, футер */
+    --surface-3: #ded9f1;   /* наведення на лавандову заливку */
     /* Текст */
-    --ink: #17211d;         /* основний */
-    --ink-2: #56625b;       /* другорядний: підказки, підписи */
-    --ink-3: #7b867e;       /* ледь помітний: лічильники, примітки */
+    --ink: #272339;         /* основний */
+    --ink-2: #5d5873;       /* другорядний: підказки, підписи */
+    --ink-3: #6f6b86;       /* ледь помітний: лічильники, примітки */
     /* Лінії */
-    --line: #dde3db;
-    --line-2: #c6d0c5;
-    /* Глибокий зелений: дії платформи */
-    --brand: #1d5c4a;
-    --brand-700: #164a3b;
-    --brand-300: #8fb4a6;
-    --brand-50: #e7efea;
-    /* Корал: посилання і те, на що варто глянути */
-    --accent: #b54a33;
-    --accent-700: #8f3a28;
-    --accent-50: #f8ddd5;
+    --line: #e3e4ee;
+    --line-2: #cbcadc;
+    /* Фіолетовий: дії платформи і посилання */
+    --brand: #6040a3;
+    --brand-700: #4c318a;
+    --brand-300: #b4a4dc;
+    --brand-100: #e1deed;
+    --brand-50: #f0ecfa;
+    /* Малиновий: те, на що варто глянути */
+    --accent: #d6336c;
+    --accent-700: #a81e55;
+    --accent-50: #fce8f0;
     /* Стани */
+    --ok: #14694a;
+    --ok-bg: #e7f4ee;
+    --ok-line: #9ccdb6;
     --warn: #7d5a00;
     --warn-bg: #fdf3da;
     --warn-line: #e4cd94;
-    --danger: #a81530;
+    --danger: #c0183a;
     --danger-bg: #fdecef;
     /* Форма */
     --r-sm: 8px;
     --r: 12px;
     --r-lg: 16px;
     --pill: 999px;
-    --shadow-1: 0 1px 2px rgba(23, 33, 29, .05);
-    --shadow-2: 0 10px 28px -14px rgba(23, 33, 29, .28), 0 2px 6px rgba(23, 33, 29, .04);
-    --ring: 0 0 0 3px rgba(29, 92, 74, .22);
+    --shadow-1: 0 1px 2px rgba(39, 35, 57, .05);
+    --shadow-2: 0 10px 28px -14px rgba(39, 35, 57, .26), 0 2px 6px rgba(39, 35, 57, .04);
+    --ring: 0 0 0 3px rgba(96, 64, 163, .22);
     --container: 920px;
     --fast: .15s ease;
   }
@@ -58,8 +62,8 @@
     -webkit-font-smoothing: antialiased;
     display: flex; flex-direction: column; min-height: 100vh;   /* футер завжди внизу */
   }
-  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
-  a:hover { color: var(--accent-700); }
+  a { color: var(--brand); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { color: var(--brand-700); }
   :focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 4px; }
   code { font-family: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace; font-size: .92em;
     background: var(--surface-2); border: 1px solid var(--line); border-radius: 6px; padding: 1px 5px; }
@@ -118,7 +122,7 @@
   h1:focus, h2:focus { outline: none; }
   p { margin: 0 0 12px; }
   .hint { font-size: 13.5px; color: var(--ink-2); margin: 2px 0; }
-  .hl { background: var(--accent-50); color: var(--accent-700); padding: 0 6px; border-radius: 6px; white-space: nowrap; }
+  .hl { background: var(--brand-100); color: var(--brand-700); padding: 0 6px; border-radius: 6px; white-space: nowrap; }
 
   /* ===================== Поля ===================== */
   label { display: block; margin: 18px 0 6px; font-weight: 600; font-size: 14.5px; }
@@ -144,7 +148,7 @@
   label.inline select { width: auto; }
   textarea { min-height: 130px; resize: vertical; line-height: 1.55; }
   [aria-invalid=true] { border-color: var(--danger) !important; background: var(--danger-bg) !important; }
-  [aria-invalid=true]:focus { box-shadow: 0 0 0 3px rgba(168, 21, 48, .18) !important; }
+  [aria-invalid=true]:focus { box-shadow: 0 0 0 3px rgba(192, 24, 58, .18) !important; }
 
   /* ===================== Повідомлення ===================== */
   .error { color: var(--danger); font-size: 14px; margin: 6px 0; font-weight: 500; }
@@ -154,7 +158,7 @@
     padding: 12px 14px; margin: 14px 0; font-size: 14.5px;
   }
   .warn { background: var(--warn-bg); border-color: var(--warn-line); color: var(--warn); }
-  .ok { background: var(--brand-50); border-color: var(--brand-300); color: var(--brand-700); }
+  .ok { background: var(--ok-bg); border-color: var(--ok-line); color: var(--ok); }
   .notice { background: var(--surface-2); border-color: var(--line); border-left-color: var(--brand); color: var(--ink); margin: 0 0 20px; }
   .warn strong, .ok strong, .notice strong { color: inherit; }
   #storageWarn { border-radius: 0; border-left: 0; border-right: 0; }
@@ -170,7 +174,7 @@
   button:active { transform: translateY(1px); }
   button.primary {
     background: var(--brand); border-color: var(--brand); color: #fff;
-    box-shadow: 0 1px 2px rgba(23, 33, 29, .12);
+    box-shadow: 0 1px 2px rgba(39, 35, 57, .14);
   }
   button.primary:hover { background: var(--brand-700); border-color: var(--brand-700); }
   button.small { padding: 6px 12px; font-size: 13.5px; border-radius: 7px; }
@@ -209,7 +213,7 @@
     display: inline-block; font-size: 12px; line-height: 1.6; padding: 1px 9px; border: 0; border-radius: var(--pill);
     margin-left: 6px; background: var(--surface-2); color: var(--ink-2); font-weight: 500; vertical-align: 1px;
   }
-  .badge.green { background: var(--brand-50); color: var(--brand); }
+  .badge.verified { background: var(--ok-bg); color: var(--ok); }
   .slots { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
   .slot, .star { border-radius: var(--pill); }
   .slot[aria-pressed=true], .star[aria-pressed=true], .role-switch button[aria-pressed=true] {
@@ -221,7 +225,7 @@
 
   /* ===================== Зміст сторінок ===================== */
   .video {
-    background: radial-gradient(circle at 50% 35%, #26413a, #17211d 70%); color: #e8eeea;
+    background: radial-gradient(circle at 50% 35%, #3b3159, #211c33 70%); color: #ece9f5;
     height: 260px; border-radius: var(--r); display: flex; flex-direction: column;
     align-items: center; justify-content: center; gap: 8px; text-align: center; padding: 16px;
   }
@@ -568,7 +572,7 @@ function expertCardHtml(ex, opts = {}) {
   const ns = opts.button ? (opts.nextSlot !== undefined ? opts.nextSlot : nextSlot(ex)) : null;
   return `<div class="card">
     <div class="row">
-      <div><strong>${esc(ex.name)}</strong><span class="badge">${LEVELS[ex.level]}</span><span class="badge${!ex.demo && !ex.test && ex.verified ? ' green' : ''}">${ex.demo ? 'демо-профіль' : ex.test ? 'тестовий профіль' : ex.verified ? '✓ перевірено' : 'без перевірки (демо)'}</span></div>
+      <div><strong>${esc(ex.name)}</strong><span class="badge">${LEVELS[ex.level]}</span><span class="badge${!ex.demo && !ex.test && ex.verified ? ' verified' : ''}">${ex.demo ? 'демо-профіль' : ex.test ? 'тестовий профіль' : ex.verified ? '✓ перевірено' : 'без перевірки (демо)'}</span></div>
       <div>${opts.match != null ? `<span class="match">${opts.match}% збіг</span> · ` : ''}<strong>${ex.price} грн</strong> / 15 хв</div>
     </div>
     <p class="hint">${ex.rating ? `★ ${ex.rating} (${ex.reviews} відгуків)` : 'Новий фахівець, відгуків ще немає'}${ex.position ? ' · ' + esc(ex.position) : ''}</p>
@@ -1155,7 +1159,7 @@ PAGES.expert = (m, r) => {
   const reviews = ex.mock ? SAMPLE_REVIEWS[parseInt(ex.id.slice(1), 10) % SAMPLE_REVIEWS.length] : [];
   m.innerHTML = `
     <h2>${esc(ex.name)}</h2>
-    <p><span class="badge">${LEVELS[ex.level]}</span><span class="badge${!ex.demo && !ex.test && ex.verified ? ' green' : ''}">${ex.demo ? 'демо-профіль' : ex.test ? 'тестовий профіль' : ex.verified ? '✓ перевірено' : 'без перевірки (демо)'}</span> ${ex.rating ? `★ ${ex.rating} (${ex.reviews} відгуків)` : '<span class="hint">Новий фахівець</span>'}</p>
+    <p><span class="badge">${LEVELS[ex.level]}</span><span class="badge${!ex.demo && !ex.test && ex.verified ? ' verified' : ''}">${ex.demo ? 'демо-профіль' : ex.test ? 'тестовий профіль' : ex.verified ? '✓ перевірено' : 'без перевірки (демо)'}</span> ${ex.rating ? `★ ${ex.rating} (${ex.reviews} відгуків)` : '<span class="hint">Новий фахівець</span>'}</p>
     ${ex.position ? `<p class="hint">${esc(ex.position)}</p>` : ''}
     <p>${esc(ex.bio)}</p>
     <p><strong>${ex.price} грн</strong> за 15 хвилин. Ціну встановлює фахівець.</p>
