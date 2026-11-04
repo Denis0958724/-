@@ -1,0 +1,22 @@
+{
+  "name": "micro-consultations-server",
+  "version": "0.3.0",
+  "private": true,
+  "description": "Сервер «Мікро-консультацій»: дані, вхід за кодом з листа, перевірка документів, власна модель пошуку фахівців.",
+  "main": "server.js",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning server.js",
+    "train": "python3 ai/train/train.py"
+  },
+  "dependencies": {
+    "@tesseract.js-data/eng": "^1.0.0",
+    "@tesseract.js-data/ukr": "^1.0.0",
+    "jimp": "^0.22.12",
+    "nodemailer": "^6.10.1",
+    "pdfjs-dist": "^4.10.38",
+    "tesseract.js": "^5.1.1"
+  }
+}

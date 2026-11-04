@@ -79,7 +79,7 @@
   <nav class="main" id="nav" aria-label="Головне меню"></nav>
 </header>
 <div id="stepsBar" hidden><ol id="steps" aria-label="Кроки"></ol></div>
-<div id="storageWarn" class="warn" role="status" hidden style="margin:0;padding:8px 16px;border-left:0;border-right:0">Цей перегляд не зберігає дані. Після перезавантаження профіль, заявки і бронювання зникнуть. Щоб усе зберігалось, відкрийте prototype.html у браузері.</div>
+<div id="storageWarn" class="warn" role="status" hidden style="margin:0;padding:8px 16px;border-left:0;border-right:0">Немає зв'язку з сервером, тому дані не завантажуються і не зберігаються. Запустіть сервер (тека server, файл README.md) і відкрийте http://localhost:3000.</div>
 
 <div class="layout">
   <main id="main" tabindex="-1"></main>
@@ -172,94 +172,54 @@ const URGENCY_LABEL = { today: 'Сьогодні, терміново', week: 'П
 const RESOLVED = { yes: 'так', partly: 'частково', no: 'ні' };
 const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'];
 const MOCK_TIMES = ['09:00', '09:30', '10:00', '11:15', '12:00', '13:30', '15:00', '16:45', '18:00', '19:30', '20:30', '21:15'];
-// «лікарнян…» (лікарняні) не є медичною темою
-const SENSITIVE = /лікар(?!нян)|(?<!\p{L})лік(и|ів|ами)(?!\p{L})|діагноз|хвороб|симптом|аналіз.{0,6}кров|психолог|психотерап|психіатр|депрес|панічн/iu;
 
-// Демо-фахівці (вже перевірені). focus: [основа слова для збігу з запитом, як показати клієнту]
-const MOCK_EXPERTS = [
-  { id: 'm1', cat: 'tax', name: 'Олена Ковальчук', level: 'expert', rating: 4.9, reviews: 87, price: 650, bio: 'Податкова консультантка, 12 років практики.', focus: [['фоп', 'ФОП і єдиний податок'], ['груп', 'вибір групи'], ['перевірк', 'податкові перевірки'], ['пдфо', 'ПДФО']] },
-  { id: 'm2', cat: 'tax', name: 'Андрій Мельник', level: 'practitioner', rating: 4.7, reviews: 31, price: 350, bio: 'Бухгалтер для малого бізнесу, веде понад 40 ФОП.', focus: [['звітн', 'звітність'], ['єсв', 'ЄСВ'], ['рро', 'РРО'], ['прро', 'ПРРО'], ['облік', 'облік ФОП']] },
-  { id: 'm3', cat: 'tax', name: 'Марія Ткач', level: 'student', rating: 4.5, reviews: 8, price: 150, bio: 'Магістрантка, практика в аудиторській фірмі.', focus: [['груп', 'групи ФОП'], ['декларац', 'декларації']] },
-  { id: 'm4', cat: 'legal', name: 'Ігор Бондар', level: 'expert', rating: 4.8, reviews: 64, price: 800, bio: 'Адвокат, договірне право і корпоративні спори.', focus: [['догов', 'договори'], ['суд', 'судові спори'], ['претенз', 'претензії'], ['контрагент', 'спори з контрагентами']] },
-  { id: 'm5', cat: 'legal', name: 'Світлана Шевчук', level: 'practitioner', rating: 4.6, reviews: 22, price: 400, bio: 'Юристка: оренда, трудові договори, претензії.', focus: [['оренд', 'оренда'], ['догов', 'договори'], ['звільн', 'трудові питання']] },
-  { id: 'm6', cat: 'legal', name: 'Дмитро Олійник', level: 'student', rating: 4.3, reviews: 5, price: 180, bio: 'Студент-правник, юридична клініка університету.', focus: [['оренд', 'оренда житла'], ['спадщ', 'спадщина']] },
-  { id: 'm7', cat: 'career', name: 'Ірина Лисенко', level: 'expert', rating: 4.9, reviews: 112, price: 500, bio: 'HR-директорка, 15 років найму в IT та ритейлі.', focus: [['співбесід', 'співбесіди'], ['зарплат', 'переговори про зарплату'], ['офер', 'офери']] },
-  { id: 'm8', cat: 'career', name: 'Тарас Кравець', level: 'practitioner', rating: 4.7, reviews: 40, price: 300, bio: 'Рекрутер: резюме, LinkedIn, підготовка до співбесід.', focus: [['резюме', 'резюме'], ['linkedin', 'LinkedIn'], ['ваканс', 'пошук вакансій']] },
-  { id: 'm9', cat: 'career', name: 'Наталія Поліщук', level: 'student', rating: 4.4, reviews: 9, price: 120, bio: "Кар'єрна консультантка-стажистка.", focus: [['резюме', 'перше резюме'], ['робот', 'пошук першої роботи']] },
-].map(e => ({ ...e, mock: true, verified: true }));
+// Демо-фахівці приходять із сервера разом з даними. Це вигадані профілі, тому позначка «демо-профіль», а не «✓ перевірено».
+let MOCK_EXPERTS = [];
 const SAMPLE_REVIEWS = [
   ['Чітко і по суті, за 15 хвилин розібрались.', 'Отримав конкретний план дій.'],
   ['Пояснила складне простими словами.', 'Трохи не вистачило часу, але підсумок допоміг.'],
   ['Дуже уважно вислухав ситуацію.', 'Відповідь була саме на моє питання.'],
 ];
-const SUMMARY_POINTS = {
-  tax: ['Порівняли ліміти доходу для вашої і наступної групи.', 'Визначили, з якого кварталу вигідніше переходити.', 'Список документів для подачі заяви.'],
-  legal: ['Позначили ризиковані пункти договору.', 'Як сформулювати правки для іншої сторони.', 'Що зберегти як докази.'],
-  career: ['Резюме не проходить автоматичний відбір через формат.', 'Переписати перший блок під конкретну вакансію.', 'Додати 2–3 результати в цифрах.'],
-};
 
-/* ===================== Сховище (спільне для всіх вкладок) ===================== */
-// Помилка 4: пов'язує фахівця з анкетою клієнта (наявною з тією ж поштою або новою).
-// Бронювання, які фахівець робив зі свого акаунта, переходять до цієї анкети. Повертає true, якщо щось змінив.
-function linkClientFor(data, ex) {
-  let changed = false;
-  let c = ex.clientId && data.users.find(x => x.id === ex.clientId && x.type === 'client');
-  if (!c) {
-    c = data.users.find(x => x.type === 'client' && !x.expertId && x.email.toLowerCase() === ex.email.toLowerCase());
-    if (!c) {
-      const rec = (data.experts || []).find(e => e.id === ex.id) || {};
-      c = { id: uid('u'), type: 'client', name: ex.name, email: ex.email, about: rec.position || '', createdAt: Date.now() };
-      data.users.push(c);
-    }
-    ex.clientId = c.id; changed = true;
-  }
-  if (c.expertId !== ex.id) { c.expertId = ex.id; changed = true; }
-  (data.bookings || []).forEach(b => { if (b.clientId === ex.id) { b.clientId = c.id; changed = true; } });
-  return changed;
+/* ===================== Дані з сервера ===================== */
+// Усі дані живуть на сервері. Браузер тримає лише те, що сервер дозволив бачити цьому користувачу,
+// і кожну зміну відправляє запитом. Права перевіряє сервер.
+const emptyDb = () => ({ users: [], experts: [], bookings: [], busy: [], subscriptions: [], outbox: [], mailEvents: [], demoExperts: [],
+  currentUserId: null, expertDraft: null, expertSession: null, server: {} });
+let db = emptyDb();
+let serverOK = true;
+const DRAFT_KEY = 'micro-consult-expert-draft-v2';
+function loadDraft() { try { return JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null'); } catch { return null; } }
+function applyState(st) {
+  const draft = db.expertDraft || loadDraft();
+  db = { ...emptyDb(), ...st, expertDraft: draft };
+  MOCK_EXPERTS = (st.demoExperts || []).map(e => ({ ...e, mock: true }));
+  serverOK = true; showStorageWarn();
+  return db;
 }
-const STORE_KEY = 'micro-consult-proto-v2';
-const emptyDb = () => ({ users: [], experts: [], bookings: [], currentUserId: null, expertDraft: null, expertSession: null });
-let storageOK = true;
-let db = (() => {
+// Запит до API. Помилка приходить як об'єкт з текстом для людини і, можливо, полем, до якого вона стосується.
+async function api(path, body, extraHeaders) {
+  let r;
   try {
-    const raw = localStorage.getItem(STORE_KEY);
-    const data = raw ? { ...emptyDb(), ...JSON.parse(raw) } : emptyDb();
-    let migrated = false;
-    (data.experts || []).forEach(e => {
-      if (e.status === 'pending') { e.status = 'auto_approved'; migrated = true; }
-    });
-    // Помилка 9: справжній пароль фахівця лежить і в акаунті, і в анкеті. Якщо в анкеті його немає,
-    // то пароль в акаунті видала стара міграція (спільний «Secure123»), тож скидаємо його.
-    // Такий фахівець задасть свій пароль при першому вході.
-    (data.users || []).forEach(u => {
-      if (u.type !== 'expert') return;
-      const ex = (data.experts || []).find(e => e.id === u.id);
-      const real = (ex && ex.pass) || '';
-      if (u.pass !== real) { u.pass = real; migrated = true; }
-    });
-    // Помилка 4: у кожного фахівця є пов'язана анкета клієнта на ту саму пошту
-    (data.users || []).filter(u => u.type === 'expert').forEach(u => { if (linkClientFor(data, u)) migrated = true; });
-    // Помилка 6: старі бронювання отримують точний момент часу. Раніше час рахувався за годинником
-    // цього пристрою, тож переводимо саме так, без зсуву.
-    (data.bookings || []).forEach(b => {
-      if (b.at == null && b.date && b.time) {
-        const [y, mo, d] = b.date.split('-').map(Number), [h, mi] = b.time.split(':').map(Number);
-        b.at = new Date(y, mo - 1, d, h, mi).getTime(); migrated = true;
-      }
-    });
-    // Пояс фахівця: старі анкети заповнювали на цьому пристрої
-    (data.experts || []).forEach(e => { if (!e.tz) { e.tz = VIEW_TZ; migrated = true; } });
-    if (migrated) { try { localStorage.setItem(STORE_KEY, JSON.stringify(data)); } catch {} }
-    return data;
+    r = await fetch(path, body === undefined ? { credentials: 'same-origin' }
+      : { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'mc', ...(extraHeaders || {}) }, body: JSON.stringify(body) });
+  } catch {
+    serverOK = false; showStorageWarn();
+    throw { status: 0, error: "Немає зв'язку з сервером. Перевірте, що сервер запущено, і спробуйте ще раз." };
   }
-  catch { storageOK = false; return emptyDb(); } // у вбудованому перегляді localStorage недоступний
-})();
-function commit() {
-  if (!storageOK) return;
-  try { localStorage.setItem(STORE_KEY, JSON.stringify(db)); } catch { storageOK = false; showStorageWarn(); }
+  let data = {}; try { data = await r.json(); } catch { /* порожня відповідь */ }
+  if (!r.ok) throw { status: r.status, ...data, error: data.error || 'Щось пішло не так. Спробуйте ще раз.' };
+  return data;
 }
-// Помилка 7: якщо сховище недоступне (перегляд Claude), чесно кажемо, що дані зникнуть після перезавантаження
-function showStorageWarn() { const w = document.getElementById('storageWarn'); if (w) w.hidden = storageOK; }
+async function loadState() { applyState(await api('/api/state')); }
+// Локально лишається тільки чернетка анкети фахівця, і то без пароля
+function commit() {
+  try {
+    if (db.expertDraft) { const { pass, passOk, ...rest } = db.expertDraft; localStorage.setItem(DRAFT_KEY, JSON.stringify(rest)); }
+    else localStorage.removeItem(DRAFT_KEY);
+  } catch { /* сховища немає: чернетка проживе до перезавантаження */ }
+}
+function showStorageWarn() { const w = document.getElementById('storageWarn'); if (w) w.hidden = serverOK; }
 const me = () => db.users.find(u => u.id === db.currentUserId) || null;
 const myExpertRecord = () => db.experts.find(e => e.id === db.currentUserId) || null;
 
@@ -298,60 +258,12 @@ function fail(errs, first, ctx = '') {
   if (f) f.focus();
 }
 
-/* ===================== AI-аналіз (імітація) =====================
-   Усе «розуміння» зібране тут. Щоб підключити справжню модель, достатньо замінити
-   analyzeRequest / analyzeExpertise на виклик API з тим самим форматом відповіді. */
-function categorize(text, about = '', excluded = []) {
-  const t = norm(text), a = norm(about);
-  const scores = CATEGORIES.filter(c => !excluded.includes(c.id)).map(c => {
-    let s = 0;
-    for (const re of c.res) { s += (t.match(re) || []).length + 0.5 * (a.match(re) || []).length; }
-    return { id: c.id, score: s };
-  }).sort((x, y) => y.score - x.score);
-  const total = scores.reduce((n, x) => n + x.score, 0);
-  const [best, second] = scores;
-  const primary = best && best.score >= 1 ? best.id : null;
-  const secondary = primary && second && second.score >= 1 && second.score >= best.score * 0.5 ? second.id : null;
-  const confidence = primary ? Math.min(97, Math.round((100 * best.score) / (total + 0.5))) : 0;
-  return { primary, secondary, confidence };
-}
-function wordsFor(text, catIds, limit = 6) {
-  const t = norm(text), out = [];
-  for (const id of catIds) {
-    const c = CAT[id]; if (!c) continue;
-    for (const stem of c.kw) {
-      const re = new RegExp('(?<!\\p{L})(' + escRe(stem) + "[\\p{L}'-]*)", 'giu');
-      // різні форми одного слова («договір», «договору») показуємо один раз
-      for (const m of t.matchAll(re)) if (!out.some(w => w.slice(0, 5) === m[1].slice(0, 5))) out.push(m[1]);
-    }
-  }
-  return out.slice(0, limit);
-}
-// Смайли не рахуються як текст. Слово: дві і більше літер, без трьох однакових підряд («ауууу» не слово).
+/* ===================== AI-аналіз =====================
+   Тему запиту, уточнення, найближчі теми і ранжування фахівців рахує власна модель на сервері (server/ai).
+   Браузер лише показує результат. */
+// Смайли не рахуються як текст. Слово: дві і більше літер, без трьох однакових підряд («ауууу» не слово). Сервер перевіряє так само.
 const noEmoji = t => String(t).replace(/[\p{Extended_Pictographic}\p{Emoji_Modifier}\u200d\ufe0f]/gu, ' ').replace(/\s+/g, ' ').trim();
 const realWords = t => (noEmoji(t).toLowerCase().match(/\p{L}{2,}/gu) || []).filter(w => !/(\p{L})\1\1/u.test(w));
-function analyzeRequest(text, about = '', excluded = []) {
-  const cat = categorize(text, about, excluded);
-  const t = norm(text);
-  const urgency = /(?<!\p{L})(сьогодні|терміново|негайно|якнайшвидше|зараз|до вечора|asap)/iu.test(t) ? 'today'
-    : /(?<!\p{L})(завтра|цього тижня|на тижні|до кінця тижня|до (понеділка|вівторка|середи|четверга|п'ятниці|суботи|неділі))/iu.test(t) ? 'week' : null;
-  let budget = null;
-  const bm = t.match(/(\d[\d\s]{1,6})\s*(?:грн|гривень|гривні|гривня|₴)/u) || t.match(/бюджет\D{0,20}(\d{2,5})/u);
-  if (bm) { const n = parseInt(bm[1].replace(/\s/g, ''), 10); if (n >= 50 && n <= 100000) budget = n; }
-  const clean = noEmoji(text);
-  const sentences = clean.split(/(?<=[.!?])\s+/).filter(Boolean);
-  const question = trunc(sentences.find(s => s.endsWith('?')) || sentences[0] || clean, 180);
-  return {
-    ...cat,
-    words: cat.primary ? wordsFor(text, [cat.primary, cat.secondary].filter(Boolean)) : [],
-    urgency, budget, question,
-    sensitive: SENSITIVE.test(t),
-  };
-}
-function analyzeExpertise(text) {
-  const cat = categorize(text);
-  return { ...cat, tags: cat.primary ? wordsFor(text, [cat.primary, cat.secondary].filter(Boolean), 8) : [], sensitive: SENSITIVE.test(norm(text)) };
-}
 
 /* ===================== Фахівці, слоти, підбір ===================== */
 const stemOf = w => (w.length > 5 ? w.slice(0, w.length - 2) : w);
@@ -367,7 +279,7 @@ function findExpert(id) {
   const m = MOCK_EXPERTS.find(e => e.id === id); if (m) return m;
   const r = db.experts.find(e => e.id === id); return r ? regToPublic(r) : null;
 }
-const isBookedAt = (exId, at) => db.bookings.some(b => b.expertId === exId && b.at === at);
+const isBookedAt = (exId, at) => (db.busy || []).some(b => b.expertId === exId && b.at === at) || db.bookings.some(b => b.expertId === exId && b.at === at);
 // Слоти фахівця на найближчі дні. Рахуємо в його поясі, групуємо за датою глядача.
 function slotsFor(ex) {
   const tz = expertTz(ex), now = Date.now(), today = tzParts(now, tz);
@@ -404,12 +316,16 @@ const nextSlot = ex => { for (const g of slotsFor(ex)) if (g.slots.length) retur
 
 function scoreExpert(ex, a, text) {
   const reasons = [];
-  let s = ex.cat === a.primary ? 60 : ex.cat === a.secondary ? 40 : 15;
+  // Основа: оцінка моделі (ймовірність теми фахівця і схожість його опису на запит)
+  const rk = (a.ranking || []).find(x => x.id === ex.id);
+  let s = rk ? 15 + rk.score * 0.75 : ex.cat === a.primary ? 60 : 15;
   if (ex.cat === a.primary) reasons.push({ ok: true, text: `Працює з темою «${catName(ex.cat)}»` });
   else if (ex.cat === a.secondary) reasons.push({ ok: true, text: `Суміжна тема: «${catName(ex.cat)}»` });
+  else reasons.push({ ok: false, text: `Інша тема: «${catName(ex.cat)}»` });
+  if (rk && rk.why.length) reasons.push({ ok: true, text: `Опис фахівця перегукується з вашим запитом: ${rk.why.join(', ')}` });
   const t = norm(text);
   const hits = unique(ex.focus.filter(([stem]) => stemRe(stem, 'iu').test(t)).map(([, label]) => label));
-  if (hits.length) { s += Math.min(24, hits.length * 8); reasons.push({ ok: true, text: `Спеціалізація збігається: ${hits.join(', ')}` }); }
+  if (hits.length) { s += Math.min(12, hits.length * 4); reasons.push({ ok: true, text: `Спеціалізація збігається: ${hits.join(', ')}` }); }
   const ns = nextSlot(ex);
   if (a.urgency === 'today') {
     if (ns && ns.d === 0) { s += 6; reasons.push({ ok: true, text: 'Є вільний час сьогодні' }); }
@@ -425,14 +341,14 @@ function scoreExpert(ex, a, text) {
 }
 function rankExperts(a) {
   return allExperts()
-    .filter(ex => ex.id !== db.currentUserId && ex.id !== (me() || {}).expertId && (ex.cat === a.primary || ex.cat === a.secondary))
+    .filter(ex => ex.id !== db.currentUserId && ex.id !== (me() || {}).expertId && (ex.cat === a.primary || ex.cat === a.secondary || (a.nearest || []).some(n => n.cat === ex.cat)))
     .map(ex => ({ ex, ...scoreExpert(ex, a, fullText()) }));
 }
 function expertCardHtml(ex, opts = {}) {
   const ns = opts.button ? (opts.nextSlot !== undefined ? opts.nextSlot : nextSlot(ex)) : null;
   return `<div class="card">
     <div class="row">
-      <div><strong>${esc(ex.name)}</strong><span class="badge">${LEVELS[ex.level]}</span><span class="badge">${ex.verified ? '✓ перевірено' : 'без перевірки (демо)'}</span></div>
+      <div><strong>${esc(ex.name)}</strong><span class="badge">${LEVELS[ex.level]}</span><span class="badge">${ex.demo ? 'демо-профіль' : ex.verified ? '✓ перевірено' : 'без перевірки (демо)'}</span></div>
       <div>${opts.match != null ? `<span class="match">${opts.match}% збіг</span> · ` : ''}<strong>${ex.price} грн</strong> / 15 хв</div>
     </div>
     <p class="hint">${ex.rating ? `★ ${ex.rating} (${ex.reviews} відгуків)` : 'Новий фахівець, відгуків ще немає'}${ex.position ? ' · ' + esc(ex.position) : ''}</p>
@@ -492,7 +408,6 @@ const CLIENT_STEPS = ['Опис', 'Аналіз AI', 'Фахівець і час
 const STEP_OF = { ask: 0, analysis: 1, expert: 2, pay: 3, booked: 3, session: 4, summary: 5, thanks: 6 };
 
 function render(opts = {}) {
-  runNotifier();
   const r = parseHash();
   const now = Date.now();
   const same = opts.silent && r.name === current;
@@ -505,7 +420,8 @@ function render(opts = {}) {
   main.innerHTML = (pendingNotice ? `<div class="notice" role="status">${esc(pendingNotice)}</div>` : '') + '<div id="page"></div>';
   pendingNotice = null;
   const page = $('#page');
-  (PAGES[r.name] || PAGES.notFound)(page, r);
+  if (!serverOK) PAGES.noServer(page);
+  else (PAGES[r.name] || PAGES.notFound)(page, r);
   renderNav(); renderSteps();
   saveFlow();
   if (!same) {
@@ -526,7 +442,7 @@ function renderNav() {
     ${u ? `${linkedOf(u) ? `<span class="role-switch" role="group" aria-label="Режим">Режим: <button type="button" class="small" data-role="expert" aria-pressed="${u.type === 'expert'}">Фахівець</button><button type="button" class="small" data-role="client" aria-pressed="${u.type === 'client'}">Клієнт</button></span>` : ''}<span class="hint">${esc(u.name)} · ${u.type === 'expert' ? 'фахівець' : 'клієнт'}</span><button class="small" id="logoutBtn" type="button">Вийти</button>`
         : `<a href="#/login" ${isCur('login')}>Увійти</a>`}`;
   $('#cabLink').onclick = e => { e.preventDefault(); openCabinet(); };
-  if ($('#logoutBtn')) $('#logoutBtn').onclick = () => { logout(); nav('/'); };
+  if ($('#logoutBtn')) $('#logoutBtn').onclick = async () => { await logout(); nav('/'); };
   $('#nav').querySelectorAll('.role-switch button').forEach(b => b.onclick = () => switchRole(b.dataset.role, current === 'cabinet' ? 'cabinet' : null));
 }
 function renderSteps() {
@@ -536,22 +452,29 @@ function renderSteps() {
   $('#steps').innerHTML = CLIENT_STEPS.map((l, i) =>
     `<li class="${i < idx ? 'done' : i === idx ? 'current' : ''}" ${i === idx ? 'aria-current="step"' : ''}>${i + 1}. ${l}</li>`).join('');
 }
-function logout() { log('logout'); db.currentUserId = null; db.expertSession = null; commit(); flow = freshFlow(); }
+async function logout() {
+  log('logout');
+  try { applyState(await api('/api/auth/logout', {})); } catch { db = { ...emptyDb(), demoExperts: db.demoExperts, server: db.server }; }
+  flow = freshFlow();
+}
 // Помилка 4: пов'язана анкета (для фахівця це клієнт, для клієнта фахівець)
 function linkedOf(u) {
   if (!u) return null;
   const id = u.type === 'expert' ? u.clientId : u.expertId;
   return (id && db.users.find(x => x.id === id)) || null;
 }
-// Перемикання режиму без повторного входу. У фахівця без пароля пускаємо, лише якщо він уже входив як фахівець у цьому браузері.
-function switchRole(role, then) {
+// Перемикання режиму без повторного входу. У режим фахівця сервер пускає, лише якщо в цій сесії фахівець уже входив з паролем.
+async function switchRole(role, then) {
   const u = me(), other = linkedOf(u);
   if (!u || !other || u.type === role) return;
-  if (role === 'expert' && db.expertSession !== other.id) {
-    log('switch_needs_password');
-    return nav(`/login?role=expert&next=${then === 'ask' ? 'ask' : 'cabinet'}&email=${encodeURIComponent(other.email)}`);
+  try { applyState(await api('/api/auth/switch', { to: role })); }
+  catch (e) {
+    if (e.code === 'need_password') {
+      log('switch_needs_password');
+      return nav(`/login?role=expert&next=${then === 'ask' ? 'ask' : 'cabinet'}&email=${encodeURIComponent(other.email)}`);
+    }
+    pendingNotice = e.error; return render({ silent: true });
   }
-  db.currentUserId = other.id; commit();
   log('switch_role', role);
   if (then) nav('/' + then); else render({ silent: true });
 }
@@ -582,6 +505,51 @@ function bindSubmit(form, handler) {
 
 /* ===================== Сторінки ===================== */
 const PAGES = {};
+PAGES.noServer = m => {
+  m.innerHTML = `<h2>Сервер не запущено</h2>
+    <p>Дані, вхід і бронювання тепер живуть на сервері, тому без нього сторінка не працює.</p>
+    <ol class="how"><li>Відкрийте теку <strong>server</strong> поруч із цим файлом.</li><li>Запустіть <code>npm install</code>, потім <code>npm start</code>. Подробиці у файлі README.md.</li><li>Відкрийте <strong>http://localhost:3000</strong>.</li></ol>
+    <div class="actions"><button class="primary" id="retry">Спробувати ще раз</button></div>`;
+  $('#retry', m).onclick = async () => { try { await loadState(); } catch { /* банер лишиться */ } render({ silent: true }); };
+};
+// Блок «введіть код з листа». after(state) викликається після успішної перевірки.
+function codeStep(box, { email, mode, payload, after, resendIn = 60000, extraHeaders }) {
+  let left = Math.ceil(resendIn / 1000), timer = null;
+  box.hidden = false;
+  box.innerHTML = `
+    <div class="notice" role="status">Ми надіслали 6-значний код на <strong>${esc(email)}</strong>. Він діє 10 хвилин.</div>
+    <label for="code">Код з листа</label>
+    <input id="code" class="short" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6">
+    <div id="codeErr" class="error"></div>
+    <div class="actions"><button type="button" class="primary" id="codeOk">Підтвердити</button><button type="button" id="resend" disabled>Надіслати код ще раз</button></div>
+    <p class="hint">Листа немає? Перевірте папку «Спам» і чи правильно вказано адресу.</p>`;
+  const inp = $('#code', box), resend = $('#resend', box);
+  const tick = () => {
+    if (left > 0) { resend.textContent = `Надіслати код ще раз (${left} с)`; resend.disabled = true; left--; }
+    else { resend.textContent = 'Надіслати код ще раз'; resend.disabled = false; clearInterval(timer); }
+  };
+  tick(); timer = setInterval(tick, 1000);
+  inp.focus();
+  const go = async () => {
+    const code = inp.value.trim();
+    if (!/^\d{6}$/.test(code)) { setErr('codeErr', 'Код складається з 6 цифр', inp); return fail(['code'], [inp], 'код'); }
+    $('#codeOk', box).disabled = true;
+    try { const st = await api('/api/auth/verify', { email, mode, code }, extraHeaders); clearInterval(timer); log('email_code_ok', mode); await after(st); }
+    catch (e) { $('#codeOk', box).disabled = false; setErr('codeErr', e.error, inp); fail(['code'], [inp], 'код'); }
+  };
+  $('#codeOk', box).onclick = go;
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); go(); } });
+  resend.onclick = async () => {
+    try { const r = await api('/api/auth/start', { ...(payload || {}), email, mode }, extraHeaders); left = Math.ceil((r.resendIn || 60000) / 1000); setErr('codeErr', ''); timer = setInterval(tick, 1000); tick(); log('email_code_resend'); }
+    catch (e) { setErr('codeErr', e.error, inp); if (e.retryIn) { left = Math.ceil(e.retryIn / 1000); timer = setInterval(tick, 1000); tick(); } }
+  };
+}
+// Помилка з сервера біля потрібного поля
+function serverErr(e, map, fallbackId) {
+  const id = (e.field && map[e.field]) || fallbackId;
+  setErr(id + 'Err', e.error, $('#' + id));
+  return fail([e.field || 'server'], [$('#' + id)], 'сервер');
+}
 
 PAGES.home = m => {
   const experts = allExperts();
@@ -627,86 +595,53 @@ PAGES.profile = (m, r) => {
       <input id="email" type="email" autocomplete="email" inputmode="email" value="${esc(u ? u.email : '')}">
       <p class="hint">Сюди прийдуть підтвердження бронювання, сповіщення і підсумок консультації.</p>
       <div id="emailErr" class="error"></div>
-      ${u ? (u.emailConfirmed
-        ? '<p class="hint" id="mailState">Пошту підтверджено ✓</p>'
-        : '<div class="warn" id="mailState">Пошту не підтверджено, тому сповіщення не відправляються. <button type="button" class="small" id="confirmMail">Підтвердити пошту</button><br><span class="hint">У прототипі лист підтвердження імітується: кнопка робить те саме, що посилання з листа.</span></div>') : ''}
+      ${u ? '<p class="hint" id="mailState">Пошту підтверджено кодом з листа ✓ Щоб змінити пошту, вкажіть нову: ми надішлемо код на неї.</p>' : ''}
       <label for="about">Чим ви займаєтесь? <span class="hint">(необов'язково)</span></label>
       <input id="about" type="text" value="${esc(u && u.about ? u.about : '')}">
       <p class="hint">Допомагає AI точніше підібрати фахівця. Фахівець побачить це разом із заявкою.</p>
-      ${isNew ? '<p class="hint">Зберігаючи профіль, ви погоджуєтесь з умовами користування. Вхід без пароля, за посиланням на пошту (у прототипі імітується).</p>' : ''}
+      ${isNew ? '<p class="hint">Зберігаючи профіль, ви погоджуєтесь з умовами користування. Пароль не потрібен: для підтвердження і для кожного входу ми надсилаємо код на пошту.</p>' : ''}
       <div id="savedMsg" class="ok" hidden role="status">Профіль збережено ✓</div>
       <div class="actions"><button class="primary" type="button" data-submit>${nextLabel || 'Зберегти профіль'}</button></div>
     </form>
+    <div id="codeBox" hidden></div>
     ${isNew ? `<p>Вже заповнювали профіль раніше? <a href="#/login?next=${next}">Увійти</a></p>` : ''}`;
-  bindSubmit($('#f', m), () => {
+  const done = () => { if (next) return nav('/' + next); render({ silent: true }); $('#savedMsg', m).hidden = false; };
+  bindSubmit($('#f', m), async () => {
     const name = $('#name', m), email = $('#email', m);
-    const nm = name.value.trim(), em = email.value.trim();
+    const nm = name.value.trim(), em = email.value.trim(), about = $('#about', m).value.trim();
     const errs = [], first = [];
     if (!nm) { setErr('nameErr', 'Вкажіть, як до вас звертатися', name); errs.push('name'); first.push(name); } else setErr('nameErr', '', name);
-    const taken = db.users.some(x => x.type === (u ? u.type : 'client') && x.id !== (u && u.id) && x.email.toLowerCase() === em.toLowerCase());
-    if (!EMAIL_RE.test(em)) { setErr('emailErr', 'Перевірте адресу пошти', email); errs.push('email'); first.push(email); }
-    else if (taken) { setErr('emailErr', 'Профіль з такою поштою вже є. Увійдіть за посиланням нижче.', email); errs.push('email_taken'); first.push(email); }
-    else setErr('emailErr', '', email);
+    if (!EMAIL_RE.test(em)) { setErr('emailErr', 'Перевірте адресу пошти', email); errs.push('email'); first.push(email); } else setErr('emailErr', '', email);
     if (errs.length) return fail(errs, first, 'профіль');
-    const about = $('#about', m).value.trim();
-    if (u) {
-      if (u.email.toLowerCase() !== em.toLowerCase()) u.emailConfirmed = false; // нова пошта знову потребує підтвердження
-      Object.assign(u, { name: nm, email: em, about });
-      const rec = myExpertRecord(); if (rec) Object.assign(rec, { name: nm, email: em });
-      log('profile_updated');
-    } else {
-      const user = { id: uid('u'), type: 'client', name: nm, email: em, about, createdAt: Date.now() };
-      db.users.push(user); db.currentUserId = user.id;
-      log('profile_created');
-    }
-    commit();
-    if (next) return nav('/' + next);
-    render({ silent: true });
-    $('#savedMsg', m).hidden = false;
+    const btn = m.querySelector('[data-submit]'); btn.disabled = true;
+    try {
+      if (!u) {
+        // Новий профіль: спершу код на пошту, акаунт з'явиться після підтвердження
+        const r0 = await api('/api/auth/start', { mode: 'signup', email: em, name: nm, about });
+        log('profile_code_sent');
+        codeStep($('#codeBox', m), { email: r0.sentTo, mode: 'signup', payload: { name: nm, about }, resendIn: r0.resendIn,
+          after: st => { applyState(st); log('profile_created'); done(); } });
+      } else {
+        applyState(await api('/api/profile', { name: nm, about }));
+        log('profile_updated');
+        if (em.toLowerCase() !== u.email.toLowerCase()) {
+          const r0 = await api('/api/auth/start', { mode: 'change_email', email: em });
+          codeStep($('#codeBox', m), { email: r0.sentTo, mode: 'change_email', resendIn: r0.resendIn,
+            after: st => { applyState(st); log('email_changed'); done(); } });
+        } else done();
+      }
+    } catch (e) { serverErr(e, { name: 'name', email: 'email' }, 'email'); }
+    finally { btn.disabled = false; }
   });
-  if ($('#confirmMail', m)) $('#confirmMail', m).onclick = () => { u.emailConfirmed = true; commit(); log('email_confirmed'); render({ silent: true }); };
 };
 
-// Фахівець без пароля задає свій. Лист для встановлення пароля в прототипі імітується, як і вхід клієнта.
-function showSetPassword(m, u, next) {
-  m.innerHTML = `
-    <h2>Задайте пароль</h2>
-    <p>Для акаунта фахівця ${esc(u.email)} пароль ще не задано.</p>
-    <p class="hint">У справжньому сервісі сюди веде посилання з листа. У прототипі лист імітується, тому задайте пароль тут.</p>
-    <form id="sp" novalidate>
-      <label for="np1">Новий пароль</label>
-      <input id="np1" type="password" autocomplete="new-password">
-      <p class="hint">Щонайменше 8 символів, літери й цифри.</p>
-      <div id="np1Err" class="error"></div>
-      <label for="np2">Повторіть пароль</label>
-      <input id="np2" type="password" autocomplete="new-password">
-      <div id="np2Err" class="error"></div>
-      <div class="actions"><button class="primary" type="button" data-submit>Зберегти і увійти</button></div>
-    </form>`;
-  const f = $('#sp', m); $('#np1', m).focus();
-  bindSubmit(f, () => {
-    const a = $('#np1', m), b = $('#np2', m), p1 = a.value, p2 = b.value;
-    const strong = p1.length >= 8 && /\p{L}/u.test(p1) && /\d/.test(p1);
-    setErr('np1Err', strong ? '' : 'Пароль має містити щонайменше 8 символів, літери й цифри', a);
-    setErr('np2Err', !strong || p1 === p2 ? '' : 'Паролі не збігаються', b);
-    if (!strong) return fail(['np1'], [a], 'новий пароль');
-    if (p1 !== p2) return fail(['np2'], [b], 'новий пароль');
-    u.pass = p1;
-    const ex = db.experts.find(e => e.id === u.id); if (ex) ex.pass = p1;
-    linkClientFor(db, u);
-    db.expertSession = u.id;
-    db.currentUserId = u.id; commit(); flow = freshFlow();
-    log('password_set');
-    nav('/' + (next || 'cabinet'));
-  });
-}
 
 PAGES.login = (m, r) => {
   const next = safeNext(r.query.get('next'));
   const defRole = r.query.get('role') === 'expert' ? 'expert' : 'client';
   m.innerHTML = `
     <h2>Вхід</h2>
-    <p class="hint">Вкажіть пошту, з якою реєструвалися. Для клієнтів вхід без пароля (імітація посилання на пошту), для фахівців потрібен пароль.</p>
+    <p class="hint">Вкажіть пошту, з якою реєструвалися. Клієнт входить за кодом, який ми надішлемо на пошту. Фахівець входить з паролем.</p>
     <form id="f" novalidate>
       <fieldset class="radio-row">
         <legend>Увійти як:</legend>
@@ -723,6 +658,7 @@ PAGES.login = (m, r) => {
       </div>
       <div class="actions"><button class="primary" type="button" data-submit>Увійти</button></div>
     </form>
+    <div id="codeBox" hidden></div>
     <p>Ще не заповнювали профіль? <a href="#/profile?next=${next}">Заповнити профіль</a> або <a href="#/become-expert">стати фахівцем</a>.</p>`;
 
   const passBox = $('#passBox', m);
@@ -733,58 +669,27 @@ PAGES.login = (m, r) => {
     };
   });
 
-  bindSubmit($('#f', m), () => {
+  bindSubmit($('#f', m), async () => {
     const email = $('#email', m);
     const pass = $('#pass', m);
     const role = (m.querySelector('input[name=loginRole]:checked') || {}).value || 'client';
     const em = email.value.trim().toLowerCase();
-    const pw = pass.value;
     setErr('emailErr', '', email);
     setErr('passErr', '', pass);
-
-    if (!em) {
-      setErr('emailErr', 'Вкажіть адресу пошти', email);
-      return fail(['email'], [email], 'вхід');
-    }
-
-    const matching = db.users.filter(x => x.email.toLowerCase() === em);
-    if (!matching.length) {
-      setErr('emailErr', EMAIL_RE.test(em) ? 'Акаунт з такою поштою не знайдено' : 'Перевірте адресу пошти', email);
-      return fail(['login'], [email], 'вхід');
-    }
-
-    let u = matching.find(x => x.type === role);
-    if (!u) {
+    if (!em) { setErr('emailErr', 'Вкажіть адресу пошти', email); return fail(['email'], [email], 'вхід'); }
+    const btn = m.querySelector('[data-submit]'); btn.disabled = true;
+    try {
       if (role === 'expert') {
-        setErr('emailErr', 'Для цієї пошти немає акаунта фахівця. Якщо ви клієнт, оберіть «Клієнт».', email);
+        if (!pass.value) { setErr('passErr', 'Введіть пароль фахівця', pass); return fail(['pass'], [pass], 'вхід'); }
+        applyState(await api('/api/auth/expert-login', { email: em, pass: pass.value }));
+        flow = freshFlow(); log('login', 'expert'); nav('/' + next);
       } else {
-        setErr('emailErr', 'Для цієї пошти немає акаунта клієнта. Якщо ви фахівець, оберіть «Фахівець».', email);
+        const r0 = await api('/api/auth/start', { mode: 'login', email: em });
+        codeStep($('#codeBox', m), { email: r0.sentTo, mode: 'login', resendIn: r0.resendIn,
+          after: st => { applyState(st); flow = freshFlow(); log('login', 'client'); nav('/' + next); } });
       }
-      return fail(['role'], [email], 'вхід');
-    }
-
-    if (u.type === 'expert' && !u.pass) {
-      // Пароля ще немає: не пускаємо з будь-яким паролем, а пропонуємо задати свій
-      log('login_set_password');
-      return showSetPassword(m, u, next);
-    }
-
-    if (u.type === 'expert') {
-      if (!pw) {
-        setErr('passErr', 'Введіть пароль фахівця', pass);
-        return fail(['pass'], [pass], 'вхід');
-      }
-      if (pw !== u.pass) {
-        setErr('passErr', 'Невірний пароль', pass);
-        return fail(['pass'], [pass], 'вхід');
-      }
-    }
-
-    if (u.type === 'expert') linkClientFor(db, u);
-    db.expertSession = u.type === 'expert' ? u.id : null; // клієнтський вхід без пароля не відкриває режим фахівця
-    db.currentUserId = u.id; commit(); flow = freshFlow();
-    log('login', u.type);
-    nav('/' + next);
+    } catch (e) { serverErr(e, { email: 'email', pass: 'pass' }, role === 'expert' ? 'pass' : 'email'); }
+    finally { btn.disabled = false; }
   });
 };
 
@@ -816,7 +721,7 @@ PAGES.ask = m => {
   upd();
   // Чернетка зберігається, щоб після заповнення профілю текст не загубився
   ta.addEventListener('input', () => { upd(); flow.draft = ta.value; saveFlow(); });
-  bindSubmit(form, () => {
+  bindSubmit(form, async () => {
     const v = ta.value.trim();
     if (noEmoji(v).length < MIN) { setErr('textErr', `Опишіть трохи детальніше: щонайменше ${MIN} символів`, ta); return fail(['text'], [ta], 'опис'); }
     if (realWords(v).length < 4) { setErr('textErr', 'Опишіть питання словами: що сталося і що хочете дізнатися', ta); return fail(['text_words'], [ta], 'опис'); }
@@ -829,7 +734,10 @@ PAGES.ask = m => {
     }
     $('#profileErr', m).textContent = '';
     const cur = me();
-    if (cur.type === 'expert' && linkedOf(cur)) { db.currentUserId = linkedOf(cur).id; commit(); log('switch_role', 'client'); }
+    if (cur.type === 'expert' && linkedOf(cur)) {
+      try { applyState(await api('/api/auth/switch', { to: 'client' })); log('switch_role', 'client'); }
+      catch (e) { setErr('textErr', e.error, ta); return fail(['switch'], [ta], 'заявка'); }
+    }
     if (v !== fullText()) { const ui = flow.ui; flow = freshFlow(); flow.ui = ui; flow.text = v; }
     flow.draft = null;
     nav('/analysis');
@@ -842,17 +750,23 @@ PAGES.analysis = m => {
   if (flow.analysis && flow.analysisKey === key) return showAnalysis(m);
   m.innerHTML = `<h2>Аналізуємо запит</h2><p role="status"><span class="spinner" aria-hidden="true"></span>AI читає ваш опис і шукає відповідних фахівців…</p>`;
   const token = renderToken;
-  setTimeout(() => {
+  api('/api/analyze', { text: fullText(), excluded: flow.excluded }).then(a => {
     if (token !== renderToken) return; // користувач уже пішов з екрана
-    flow.analysis = analyzeRequest(fullText(), (me() || {}).about || '', flow.excluded);
+    flow.analysis = a;
     flow.analysisKey = key;
     flow.clarifyMode = null;
     saveFlow();
-    const a = flow.analysis;
     log('ai_analysis', `тема=${a.primary || 'немає'}${a.secondary ? '+' + a.secondary : ''}, впевненість ${a.confidence}%, коли=${a.urgency || 'немає'}, бюджет=${a.budget || 'немає'}${a.sensitive ? ', чутлива тема' : ''}`);
     showAnalysis(m);
     const h = m.querySelector('h2'); if (h) { h.tabIndex = -1; h.focus(); }
-  }, 1100);
+  }).catch(e => {
+    if (token !== renderToken) return;
+    // Помилка AI чи сервера не ламає сторінку: пояснюємо і даємо повторити
+    m.innerHTML = `<h2>Не вдалося проаналізувати запит</h2><div class="warn">${esc(e.error)}</div>
+      <div class="actions"><button id="edit">Змінити опис</button><button class="primary" id="again">Спробувати ще раз</button></div>`;
+    $('#edit', m).onclick = () => goBack('/ask');
+    $('#again', m).onclick = () => render({ silent: true });
+  });
 };
 
 function showAnalysis(m) {
@@ -873,12 +787,18 @@ function showAnalysis(m) {
   // 2. AI не впевнений або користувач сказав, що AI помилився: уточнювальне питання (вільний текст)
   if (!a.primary || flow.clarifyMode) {
     const wrong = flow.clarifyMode === 'wrong';
+    const cands = wrong ? [] : (a.candidates || []).filter(c => c.p >= 10);
     const msg = wrong
       ? 'Вибачте, що не влучив. Розкажіть, будь ласка, своїми словами, до якої сфери належить питання і хто, на вашу думку, міг би допомогти.'
-      : 'Я не впевнений, до якого фахівця вас направити. Розкажіть, будь ласка, детальніше: що саме сталося, у якій сфері це питання і яку відповідь ви хочете отримати?';
+      : a.offTopic && !cands.length
+        ? `Схоже, це питання не з тих тем, з якими ми працюємо: ${CATEGORIES.map(c => c.name.toLowerCase()).join(', ')}. Якщо ми помиляємось, розкажіть детальніше, що сталося і яку відповідь ви хочете отримати.`
+        : cands.length >= 2
+          ? 'Я бачу кілька можливих тем. Оберіть, яка ближча, або розкажіть детальніше.'
+          : 'Я не впевнений, до якого фахівця вас направити. Розкажіть, будь ласка, детальніше: що саме сталося, у якій сфері це питання і яку відповідь ви хочете отримати?';
     m.innerHTML = `
       <h2>Потрібно трохи більше деталей</h2>
-      <div class="card"><p style="margin:0"><strong>AI:</strong> ${msg}</p></div>
+      <div class="card"><p style="margin:0"><strong>AI:</strong> ${msg}</p>
+        ${cands.length ? `<div class="actions" id="cands">${cands.map(c => `<button type="button" class="small" data-cand="${c.cat}">${esc(c.name)}</button>`).join('')}</div>` : ''}</div>
       <form id="cf" novalidate>
         <label for="clar">Ваше уточнення</label>
         <textarea id="clar" rows="4" maxlength="1000"></textarea>
@@ -886,10 +806,17 @@ function showAnalysis(m) {
         <div class="actions"><button type="button" id="edit">Переписати опис повністю</button><button class="primary" type="button" data-submit>Надіслати уточнення</button></div>
       </form>`;
     $('#edit', m).onclick = () => goBack('/ask');
+    m.querySelectorAll('[data-cand]').forEach(b => b.onclick = () => {
+      const c = cands.find(x => x.cat === b.dataset.cand);
+      // Людина сама обрала тему: беремо її як основну
+      Object.assign(a, { primary: c.cat, secondary: null, confidence: c.p, nearest: c.hasExperts ? [] : (a.nearest || []), chosenByUser: true });
+      log('ai_topic_chosen', c.cat);
+      showAnalysis(m);
+    });
     bindSubmit($('#cf', m), () => {
       const ta = $('#clar', m), v = ta.value.trim();
       if (noEmoji(v).length < 10 || realWords(v).length < 2) { setErr('clarErr', 'Напишіть хоча б одне речення', ta); return fail(['clarification'], [ta], 'уточнення'); }
-      if (wrong && a.primary) flow.excluded.push(a.primary);
+      if (wrong && a.primary && !a.chosenByUser) flow.excluded.push(a.primary);
       flow.clarifications.push(v);
       flow.analysis = null; flow.clarifyMode = null;
       log('ai_clarification', wrong ? 'після «AI помилився»' : 'AI не визначив тему');
@@ -917,8 +844,11 @@ function showAnalysis(m) {
     ${primaryList.length ? '' : `
       <div class="warn" id="wait">
         Поки немає фахівців з теми «${esc(catName(a.primary))}». Ми саме шукаємо їх і можемо написати вам, щойно хтось з'явиться.
+        ${(a.nearest || []).length
+          ? `<p style="margin:8px 0 0">Найближче за змістом: ${a.nearest.map(n => `«${esc(n.name)}», це ${esc(n.about)}`).join('; ')}. Ваше питання AI відніс до теми «${esc(catName(a.primary))}», це ${esc(a.primaryAbout || '')}. Якщо питання все ж ближче до суміжної теми, подивіться фахівців нижче.</p>`
+          : '<p style="margin:8px 0 0">Схожих тем, де фахівці вже є, теж немає. Зараз ніхто на платформі не допоможе саме з цим питанням.</p>'}
         <div class="actions" style="margin-top:8px"><button class="small" id="waitBtn" ${mySub(a.primary) ? 'disabled' : ''}>${mySub(a.primary) ? 'Ви в списку очікування ✓' : 'Повідомити мене'}</button></div>
-        ${mySub(a.primary) && !(me() || {}).emailConfirmed ? '<p class="hint" style="margin:6px 0 0">Щоб лист прийшов, <a href="#/profile">підтвердіть пошту в профілі</a>.</p>' : ''}
+
       </div>`}
     ${ranked.length ? `
       <div>
@@ -930,17 +860,16 @@ function showAnalysis(m) {
         </label>
       </div>
       ${primaryList.length ? `<p class="hint" id="subLine">${mySub(a.primary)
-        ? `Ви підписані на нових фахівців з теми «${esc(catName(a.primary))}» ✓${(me() || {}).emailConfirmed ? '' : ' Щоб лист прийшов, <a href="#/profile">підтвердіть пошту в профілі</a>.'}`
+        ? `Ви підписані на нових фахівців з теми «${esc(catName(a.primary))}» ✓`
         : `<button class="small" id="waitBtn">Повідомляти про нових фахівців з цієї теми</button>`}</p>` : ''}
       ${!primaryList.length ? '<p class="hint">Можуть допомогти із суміжної теми:</p>' : ''}
       <div id="list"></div>` : ''}`;
   $('#edit', m).onclick = () => goBack('/ask');
   $('#wrong', m).onclick = () => { flow.clarifyMode = 'wrong'; showAnalysis(m); };
-  if ($('#waitBtn', m)) $('#waitBtn', m).onclick = () => {
-    // Підписка: хто, тема, бюджет, текст заявки і момент оформлення. Відлік нових фахівців іде саме від нього.
-    ensureMailData();
-    db.subscriptions.push({ id: uid('s'), userId: me().id, cat: a.primary, budget: a.budget || null, text: fullText(), createdAt: Date.now(), notifiedExpertIds: [] });
-    commit(); log('waitlist', a.primary);
+  if ($('#waitBtn', m)) $('#waitBtn', m).onclick = async () => {
+    // Підписка: хто, тема, бюджет, текст заявки і момент оформлення. Відлік нових фахівців іде саме від нього (на сервері).
+    try { applyState(await api('/api/subscriptions', { cat: a.primary, budget: a.budget || null, text: fullText() })); log('waitlist', a.primary); }
+    catch (e) { pendingNotice = e.error; }
     showAnalysis(m);
   };
   if (!ranked.length) return;
@@ -976,7 +905,7 @@ PAGES.expert = (m, r) => {
   const reviews = ex.mock ? SAMPLE_REVIEWS[parseInt(ex.id.slice(1), 10) % SAMPLE_REVIEWS.length] : [];
   m.innerHTML = `
     <h2>${esc(ex.name)}</h2>
-    <p><span class="badge">${LEVELS[ex.level]}</span><span class="badge">${ex.verified ? '✓ перевірено' : 'без перевірки (демо)'}</span> ${ex.rating ? `★ ${ex.rating} (${ex.reviews} відгуків)` : '<span class="hint">Новий фахівець</span>'}</p>
+    <p><span class="badge">${LEVELS[ex.level]}</span><span class="badge">${ex.demo ? 'демо-профіль' : ex.verified ? '✓ перевірено' : 'без перевірки (демо)'}</span> ${ex.rating ? `★ ${ex.rating} (${ex.reviews} відгуків)` : '<span class="hint">Новий фахівець</span>'}</p>
     ${ex.position ? `<p class="hint">${esc(ex.position)}</p>` : ''}
     <p>${esc(ex.bio)}</p>
     <p><strong>${ex.price} грн</strong> за 15 хвилин. Ціну встановлює фахівець.</p>
@@ -1060,19 +989,17 @@ PAGES.pay = m => {
     $('#back', m).disabled = true; $('#agree', m).disabled = true;
     log('pay_click');
     const token = renderToken;
-    setTimeout(() => {
+    api('/api/bookings', { expertId: ex.id, at: flow.slot.at, text: fullText(), cat: a.primary, agree: true }).then(r => {
       if (token !== renderToken) return;
-      const u = me();
-      const b = {
-        id: uid('b'), clientId: u.id, clientName: u.name, expertId: ex.id, expertName: ex.name, expertMock: !!ex.mock,
-        price: ex.price, at: flow.slot.at, status: 'booked', createdAt: Date.now(),
-        request: { text: fullText(), question: a.question, cat: a.primary },
-      };
-      db.bookings.push(b); commit();
-
+      applyState(r.state);
       flow = freshFlow();
-      redirect('/booked/' + b.id);
-    }, 900);
+      redirect('/booked/' + r.booking.id);
+    }).catch(e => {
+      if (token !== renderToken) return;
+      if (e.code === 'slot') { flow.slot = null; pendingNotice = e.error; log('slot_taken'); return nav('/expert/' + ex.id); }
+      btn.disabled = false; btn.textContent = `Оплатити ${ex.price} грн`; $('#back', m).disabled = false; $('#agree', m).disabled = false;
+      setErr('agreeErr', e.error);
+    });
   };
 };
 
@@ -1122,12 +1049,10 @@ PAGES.session = (m, r) => {
   // Підтвердження на сторінці: confirm() у вбудованому перегляді заблокований
   $('#end', m).onclick = () => { $('#endAsk', m).hidden = false; $('#endConfirm', m).focus(); log('end_ask'); };
   $('#endCancel', m).onclick = () => { $('#endAsk', m).hidden = true; log('end_cancel'); };
-  $('#endConfirm', m).onclick = () => {
-    b.status = 'done'; b.endedAt = Date.now();
-    // Демо-фахівці «пишуть» підсумок одразу; справжні пишуть у своєму кабінеті
-    if (b.expertMock && !b.summaryText) b.summaryText = (SUMMARY_POINTS[b.request.cat] || ['Розібрали ситуацію.', 'Визначили наступні кроки.']).join('\n');
-    commit(); log('session_end');
-    nav('/summary/' + b.id);
+  $('#endConfirm', m).onclick = async () => {
+    // Демо-фахівці «пишуть» підсумок одразу (на сервері); справжні пишуть у своєму кабінеті
+    try { applyState(await api(`/api/bookings/${b.id}/end`, {})); log('session_end'); nav('/summary/' + b.id); }
+    catch (e) { pendingNotice = e.error; render({ silent: true }); }
   };
 };
 
@@ -1173,10 +1098,12 @@ PAGES.summary = (m, r) => {
     if (!rating) { setErr('rateErr', 'Поставте оцінку'); errs.push('rating'); }
     if (!res) { setErr('resErr', 'Оберіть варіант'); errs.push('resolved'); } else setErr('resErr', '');
     if (errs.length) return fail(errs, [], 'відгук');
-    b.review = { rating, resolved: res, comment: $('#comment', m).value.trim() };
-    commit();
-    log('review_sent', `${rating}★, закрито: ${RESOLVED[res]}`);
-    nav('/thanks/' + b.id);
+    $('#send', m).disabled = true;
+    api(`/api/bookings/${b.id}/review`, { rating, resolved: res, comment: $('#comment', m).value.trim() }).then(st => {
+      applyState(st);
+      log('review_sent', `${rating}★, закрито: ${RESOLVED[res]}`);
+      nav('/thanks/' + b.id);
+    }).catch(e => { $('#send', m).disabled = false; setErr('resErr', e.error); });
   };
   $('#skip', m).onclick = () => nav('/thanks/' + b.id);
 };
@@ -1312,9 +1239,9 @@ function expertCabinet(m, u) {
   m.querySelectorAll('[data-sum]').forEach(btn => btn.onclick = () => {
     const id = btn.dataset.sum, ta = $('#sum_' + id, m), v = ta.value.trim();
     if (v.length < 20) { setErr('sumErr_' + id, 'Напишіть хоча б кілька речень', ta); return fail(['summary'], [ta], 'підсумок фахівця'); }
-    const b = db.bookings.find(x => x.id === id); b.summaryText = v; b.summaryAt = Date.now(); commit();
-    log('expert_summary');
-    render({ silent: true });
+    btn.disabled = true;
+    api(`/api/bookings/${id}/summary`, { text: v }).then(st => { applyState(st); log('expert_summary'); render({ silent: true }); })
+      .catch(e => { btn.disabled = false; setErr('sumErr_' + id, e.error, ta); });
   });
 }
 
@@ -1369,7 +1296,7 @@ PAGES.becomeExpert = m => {
     return;
   }
   if (!db.expertDraft) {
-    db.expertDraft = { step: 1, name: (u && u.name) || '', email: (u && u.email) || '', phone: '', passOk: false, about: '', position: '', years: '',
+    db.expertDraft = { step: 1, proof: null, proofEmail: null, name: (u && u.name) || '', email: (u && u.email) || '', phone: '', passOk: false, about: '', position: '', years: '',
       cat: null, secondary: null, tags: [], education: '', qualFiles: [], idFile: null, link: '', price: '', days: [0, 1, 2, 3, 4], from: '10:00', to: '18:00' };
     commit();
   }
@@ -1392,9 +1319,12 @@ function renderWizard(m) {
     </form>`;
   const form = $('#wf', m);
   if (WIZ[step].bind) WIZ[step].bind(m, d);
-  bindSubmit(form, () => {
-    const res = WIZ[step].validate(m, d); // збирає значення в чернетку і повертає [помилки, поля]
+  bindSubmit(form, async () => {
+    const btn = form.querySelector('[data-submit]'); btn.disabled = true;
+    let res;
+    try { res = await WIZ[step].validate(m, d); } finally { btn.disabled = false; } // збирає значення в чернетку і повертає [помилки, поля]
     commit();
+    if (res.waiting) return; // чекаємо код з листа
     if (res.errs.length) {
       return fail(res.errs, res.first, `фахівець, крок ${step}`);
     }
@@ -1402,7 +1332,7 @@ function renderWizard(m) {
       d.step++; commit();
       renderWizard(m);
       const h = m.querySelector('h3'); if (h) { h.tabIndex = -1; h.focus(); }
-    } else submitExpert(d);
+    } else submitExpert(d, m);
   });
   if ($('#wBack', m)) $('#wBack', m).onclick = () => {
     if (WIZ[step].collect) WIZ[step].collect(m, d);
@@ -1425,6 +1355,7 @@ const WIZ = {
       <input id="w_name" type="text" autocomplete="name" value="${esc(d.name)}"><div id="w_nameErr" class="error"></div>
       <label for="w_email">Робоча пошта</label>
       <input id="w_email" type="email" autocomplete="email" value="${esc(d.email)}"><div id="w_emailErr" class="error"></div>
+      ${d.proof && d.proofEmail === d.email ? '<p class="hint" id="w_mailOk">Пошту підтверджено кодом з листа ✓</p>' : '<p class="hint">На цю пошту прийде код підтвердження.</p>'}
       <label for="w_phone">Телефон</label>
       <input id="w_phone" type="tel" autocomplete="tel" value="${esc(d.phone)}">
       <p class="hint">Український номер. Потрібен для зв'язку щодо перевірки, клієнти його не бачать.</p><div id="w_phoneErr" class="error"></div>
@@ -1432,14 +1363,14 @@ const WIZ = {
       <input id="w_pass" type="password" autocomplete="new-password">
       <p class="hint">Щонайменше 8 символів, літери й цифри.${d.passOk ? ' Пароль уже задано, повторно вводити не обов\'язково.' : ''}</p><div id="w_passErr" class="error"></div>
       <label for="w_pass2">Повторіть пароль</label>
-      <input id="w_pass2" type="password" autocomplete="new-password"><div id="w_pass2Err" class="error"></div>`,
+      <input id="w_pass2" type="password" autocomplete="new-password"><div id="w_pass2Err" class="error"></div>
+      <div id="codeBox" hidden></div>`,
     collect(m, d) { d.name = val(m, 'w_name'); d.email = val(m, 'w_email'); d.phone = val(m, 'w_phone'); },
     validate(m, d) {
       this.collect(m, d);
       const res = { errs: [], first: [] };
       check(/^[\p{L}'’ʼ-]{2,}(\s+[\p{L}'’ʼ-]{2,})+$/u.test(d.name), 'w_name', 'Вкажіть прізвище та ім\'я повністю', m, res);
-      const taken = db.users.some(u => u.type === 'expert' && u.email.toLowerCase() === d.email.toLowerCase());
-      check(EMAIL_RE.test(d.email) && !taken, 'w_email', taken ? 'Фахівець з такою поштою вже зареєстрований' : 'Перевірте адресу пошти', m, res);
+      check(EMAIL_RE.test(d.email), 'w_email', 'Перевірте адресу пошти', m, res);
       check(/^(\+?380|0)\d{9}$/.test(d.phone.replace(/[\s()-]/g, '')), 'w_phone', 'Вкажіть номер у форматі +380XXXXXXXXX або 0XXXXXXXXX', m, res);
       const p1 = $('#w_pass', m).value, p2 = $('#w_pass2', m).value;
       if (p1 || !d.passOk) {
@@ -1450,6 +1381,14 @@ const WIZ = {
           if (p1 === p2) { d.passOk = true; d.pass = p1; }
         }
       }
+      if (res.errs.length || (d.proof && d.proofEmail === d.email.toLowerCase())) return res;
+      // Пошта ще не підтверджена: надсилаємо код і чекаємо його тут же
+      return api('/api/auth/start', { mode: 'expert_email', email: d.email }).then(r0 => {
+        codeStep($('#codeBox', m), { email: r0.sentTo, mode: 'expert_email', resendIn: r0.resendIn,
+          after: st => { d.proof = st.proof; d.proofEmail = st.email; d.step = 2; commit(); log('expert_email_ok'); renderWizard(m); } });
+        res.errs.push('w_code'); res.first.push($('#code', m)); res.waiting = true;
+        return res;
+      }).catch(e => { check(false, e.field === 'email' ? 'w_email' : 'w_email', e.error, m, res); return res; });
       return res;
     },
   },
@@ -1477,12 +1416,14 @@ const WIZ = {
       check(d.position.length >= 3, 'w_position', 'Вкажіть посаду і місце роботи', m, res);
       check(d.years !== '' && Number.isInteger(yrs) && yrs >= 0 && yrs <= 60, 'w_years', 'Вкажіть ціле число років від 0 до 60', m, res);
       if (res.errs.includes('w_about')) return res;
-      const ea = analyzeExpertise(d.about + ' ' + d.position);
-      log('ai_expertise', `напрям=${ea.primary || 'немає'}, теги=${ea.tags.join(', ') || 'немає'}`);
-      if (ea.sensitive) check(false, 'w_about', 'Медичні та психологічні консультації на першому етапі не підключені', m, res);
-      else if (!ea.primary) check(false, 'w_about', 'AI не зміг визначити напрям. Напишіть конкретніше, з якими задачами ви допомагаєте клієнтам.', m, res);
-      else { d.cat = ea.primary; d.secondary = ea.secondary; d.tags = ea.tags; }
-      return res;
+      // Напрям і ключові теми визначає власна модель на сервері
+      return api('/api/analyze', { text: d.about + ' ' + d.position }, { 'X-Proof': d.proof || '' }).then(ea => {
+        log('ai_expertise', `напрям=${ea.primary || 'немає'}, теги=${ea.words.join(', ') || 'немає'}`);
+        if (ea.sensitive) check(false, 'w_about', 'Медичні та психологічні консультації на першому етапі не підключені', m, res);
+        else if (!ea.primary) check(false, 'w_about', 'AI не зміг визначити напрям. Напишіть конкретніше, з якими задачами ви допомагаєте клієнтам.', m, res);
+        else { d.cat = ea.primary; d.secondary = ea.secondary; d.tags = ea.words.slice(0, 8); }
+        return res;
+      }).catch(e => { check(false, 'w_about', e.status === 401 ? 'Підтвердження пошти застаріло. Поверніться на крок 1.' : e.error, m, res); return res; });
     },
   },
   3: {
@@ -1503,30 +1444,44 @@ const WIZ = {
       <label for="w_link">Профіль або портфоліо <span class="hint">(необов'язково)</span></label>
       <p class="hint">Профіль у LinkedIn, GitHub, Behance, соцмережі чи Telegram, або ваш сайт з ім'ям чи прізвищем в адресі.</p>
       <input id="w_link" type="url" value="${esc(d.link)}"><div id="w_linkErr" class="error"></div>
-      <p class="hint">У прототипі файли нікуди не надсилаються: зберігаються лише їхні назви.</p>`,
+      <p class="hint">Кожен файл одразу перевіряється на сервері: чи це справді документ, чи читається текст. Документ, що посвідчує особу, після перевірки не зберігається.</p>`,
     bind(m, d) {
+      const item = (f, icon, rm) => `<li>${icon} ${esc(f.name)} <span class="hint">${fileSize(f.size)}</span>
+        ${f.checking ? '<span class="hint">перевіряємо…</span>' : f.ok ? '<span class="hint">✓ перевірено</span>' : `<span class="error" style="display:inline">${esc((f.problems || []).join(' '))}</span>`}
+        ${f.checking ? '' : `<button type="button" class="small" ${rm}>Прибрати</button>`}</li>`;
       const draw = () => {
-        $('#w_qualList', m).innerHTML = d.qualFiles.map((f, i) => `<li>📄 ${esc(f.name)} <span class="hint">${fileSize(f.size)}</span><button type="button" class="small" data-rmq="${i}">Прибрати</button></li>`).join('');
-        $('#w_idList', m).innerHTML = d.idFile ? `<li>🪪 ${esc(d.idFile.name)} <span class="hint">${fileSize(d.idFile.size)}</span><button type="button" class="small" data-rmid>Прибрати</button></li>` : '';
+        $('#w_qualList', m).innerHTML = d.qualFiles.map((f, i) => item(f, '📄', `data-rmq="${i}"`)).join('');
+        $('#w_idList', m).innerHTML = d.idFile ? item(d.idFile, '🪪', 'data-rmid') : '';
         m.querySelectorAll('[data-rmq]').forEach(b => b.onclick = () => { d.qualFiles.splice(+b.dataset.rmq, 1); commit(); draw(); });
         const rid = m.querySelector('[data-rmid]'); if (rid) rid.onclick = () => { d.idFile = null; commit(); draw(); };
       };
       const okType = f => /\.(pdf|jpe?g|png)$/i.test(f.name);
+      // Файл іде на сервер тілом запиту. Сервер перевіряє вміст і повертає результат.
+      const upload = async (f, kind, slot) => {
+        slot.checking = true; draw();
+        try {
+          const r = await fetch('/api/documents?kind=' + kind, { method: 'POST', credentials: 'same-origin', body: f,
+            headers: { 'X-Requested-With': 'mc', 'Content-Type': 'application/octet-stream', 'X-Proof': d.proof || '', 'X-File-Name': encodeURIComponent(f.name), 'X-Person': encodeURIComponent(d.name) } });
+          const j = await r.json().catch(() => ({}));
+          if (!r.ok) Object.assign(slot, { ok: false, problems: [j.error || 'Не вдалося перевірити файл'] });
+          else Object.assign(slot, { id: j.id, ok: j.ok, problems: j.problems });
+        } catch { Object.assign(slot, { ok: false, problems: ["Немає зв'язку з сервером"] }); }
+        slot.checking = false; log('doc_checked', `${kind}: ${slot.ok ? 'ok' : 'відхилено'}`); commit(); draw();
+      };
       $('#w_qual', m).onchange = e => {
         const bad = [];
         for (const f of e.target.files) {
           if (!okType(f)) bad.push(`${f.name}: непідтримуваний формат`);
           else if (f.size > MAX_FILE) bad.push(`${f.name}: більше 10 МБ`);
-          else if (!d.qualFiles.some(x => x.name === f.name)) d.qualFiles.push({ name: f.name, size: f.size });
+          else if (!d.qualFiles.some(x => x.name === f.name)) { const slot = { name: f.name, size: f.size }; d.qualFiles.push(slot); upload(f, 'qual', slot); }
         }
         setErr('w_qualErr', bad.join('; '));
-
         e.target.value = ''; commit(); draw();
       };
       $('#w_id', m).onchange = e => {
         const f = e.target.files[0]; if (!f) return;
         if (!okType(f) || f.size > MAX_FILE) { setErr('w_idErr', !okType(f) ? 'Непідтримуваний формат' : 'Файл більший за 10 МБ'); }
-        else { d.idFile = { name: f.name, size: f.size }; setErr('w_idErr', ''); }
+        else { d.idFile = { name: f.name, size: f.size }; setErr('w_idErr', ''); upload(f, 'id', d.idFile); }
         e.target.value = ''; commit(); draw();
       };
       draw();
@@ -1536,8 +1491,10 @@ const WIZ = {
       this.collect(m, d);
       const res = { errs: [], first: [] };
       check(d.education.length >= 3 && eduOk(d.education), 'w_edu', d.education.length ? 'Не схоже на освіту. Приклад: «КНЕУ, магістр економіки»' : 'Вкажіть освіту', m, res);
-      check(d.qualFiles.length > 0, 'w_qual', 'Додайте хоча б один документ про кваліфікацію', m, res);
-      check(!!d.idFile, 'w_id', 'Додайте документ, що посвідчує особу', m, res);
+      const checking = d.qualFiles.some(f => f.checking) || (d.idFile && d.idFile.checking);
+      check(d.qualFiles.length > 0 && (checking || d.qualFiles.some(f => f.ok)), 'w_qual', d.qualFiles.length ? 'Жоден документ про кваліфікацію не пройшов перевірку. Завантажте інший файл.' : 'Додайте хоча б один документ про кваліфікацію', m, res);
+      check(!!d.idFile && (d.idFile.checking || d.idFile.ok), 'w_id', d.idFile ? 'Документ не пройшов перевірку. Завантажте інший файл.' : 'Додайте документ, що посвідчує особу', m, res);
+      if (checking && !res.errs.length) { setErr('w_qualErr', 'Зачекайте, файли ще перевіряються', $('#w_qual', m)); res.errs.push('w_qual'); res.first.push($('#w_qual', m)); }
       const lp = d.link ? linkProblem(d.link, d.name) : null;
       check(!lp, 'w_link', lp || '', m, res);
       return res;
@@ -1625,19 +1582,28 @@ const WIZ = {
   },
 };
 
-function submitExpert(d) {
-  const user = { id: uid('x'), type: 'expert', name: d.name, email: d.email, phone: d.phone, pass: d.pass || '', createdAt: Date.now() };
-  const rec = {
-    id: user.id, name: d.name, email: d.email, phone: d.phone, pass: d.pass || '', cat: d.cat, secondary: d.secondary, tags: d.tags,
-    about: d.about, position: d.position, years: Number(d.years), education: d.education,
-    qualFiles: d.qualFiles, idFile: d.idFile, link: d.link, level: levelFor(d.years), price: Number(d.price),
-    days: d.days, from: d.from, to: d.to, tz: VIEW_TZ, status: 'auto_approved', submittedAt: Date.now(),
-  };
-  db.users.push(user); db.experts.push(rec); db.currentUserId = user.id; db.expertDraft = null;
-  linkClientFor(db, user);
-  db.expertSession = user.id;
-  commit();
-  nav('/expert-sent');
+async function submitExpert(d, m) {
+  const btn = m.querySelector('[data-submit]'); btn.disabled = true;
+  try {
+    const st = await api('/api/experts', {
+      proof: d.proof, name: d.name, phone: d.phone, pass: d.pass, about: d.about, position: d.position, years: Number(d.years),
+      education: d.education, link: d.link, qualIds: d.qualFiles.filter(f => f.ok).map(f => f.id), idId: d.idFile && d.idFile.id,
+      price: Number(d.price), days: d.days, from: d.from, to: d.to, tz: VIEW_TZ, agree: true,
+    });
+    db.expertDraft = null; commit();
+    applyState(st);
+    log('expert_registered');
+    nav('/expert-sent');
+  } catch (e) {
+    btn.disabled = false;
+    // Сервер повертає крок і поле першої помилки: ведемо людину туди
+    const first = (e.errors && e.errors[0]) || { step: e.step || d.step, field: null, msg: e.error };
+    if (first.step && first.step !== d.step) { d.step = first.step; if (first.step === 1) d.passOk = false; commit(); renderWizard(m); }
+    const f = first.field && $('#' + first.field, m);
+    if (f) setErr(first.field + 'Err', first.msg, f); else pendingNotice = first.msg;
+    if (!f) render({ silent: true });
+    fail([first.field || 'server'], [f], 'реєстрація');
+  }
 }
 
 PAGES.expertSent = m => {
@@ -1647,7 +1613,7 @@ PAGES.expertSent = m => {
     <h2>Заявку надіслано ✓</h2>
     <p>Дякуємо, ${esc(rec.name.split(/\s+/)[1] || rec.name)}! Що далі:</p>
     <ol class="how">
-      <li>У демо-версії заявку схвалено автоматично, перевірки документів не було.</li>
+      <li>Документи пройшли автоматичну перевірку: це справді документи і текст читається. Справжність перевіряє модератор, а в демо-версії модератора ще немає, тож заявку схвалено автоматично.</li>
       <li>Ваш профіль уже з'явився в підборі для клієнтів з теми «${esc(catName(rec.cat))}» з позначкою «без перевірки (демо)».</li>
       <li>Бронювання і заробіток ви бачите в кабінеті.</li>
     </ol>
@@ -1671,89 +1637,19 @@ document.addEventListener('click', e => {
 }, false);
 
 // Синхронізація між вкладками: бронювання з основної вкладки одразу видно в кабінеті
-window.addEventListener('storage', e => {
-  if (e.key !== STORE_KEY) return;
-  try { db = e.newValue ? { ...emptyDb(), ...JSON.parse(e.newValue) } : emptyDb(); } catch { return; }
+window.addEventListener('focus', async () => {
+  try { await loadState(); } catch { return; }
   renderNav();
   const ae = document.activeElement;
   const typing = ae && $('#main').contains(ae) && ae.matches('input, textarea, select');
-  if (['cabinet', 'home'].includes(current) && !typing) render({ silent: true });
+  if (['cabinet', 'home', 'mail'].includes(current) && !typing) render({ silent: true });
 });
 
 /* ===================== Email-сповіщення (ТЗ Дениса, 02.11) =====================
-   Справжніх листів і фонового завдання без сервера немає. Тут «фонове завдання» це runNotifier():
-   воно запускається при відкритті, щохвилини і при кожному переході між екранами.
-   Листи складаються в db.outbox і видно в розділі «Пошта». */
+   Розсилку робить сервер (server/lib/notify.js) щохвилини і після кожної дії. Тут лише показ листів. */
 const DAY = 86400000;
 const CONSULT_STATUS = { action: 'Потребує дії', planned: 'Заплановано', done: 'Завершено' };
-// Стан консультації для клієнта: «Потребує дії», якщо час минув, а консультацію не провели
-function consultStatus(b) { if (b.status === 'done') return 'done'; return b.at > Date.now() ? 'planned' : 'action'; }
-function ensureMailData() {
-  db.subscriptions = db.subscriptions || []; db.mailEvents = db.mailEvents || []; db.outbox = db.outbox || [];
-  if (db.notifyStartedAt) return false;
-  // Запуск сповіщень: усе, що вже існує, вважаємо відомим. Про старі записи листів не буде.
-  db.notifyStartedAt = Date.now();
-  db.bookings.forEach(b => { b.notifiedStatus = consultStatus(b); });
-  return true;
-}
-function queueEvent(userId, key, ev) {
-  // Без дублікатів: така подія вже в черзі або вже була в листі
-  if (db.mailEvents.some(e => e.key === key) || db.outbox.some(mm => mm.keys.includes(key))) return false;
-  db.mailEvents.push({ id: uid('e'), userId, key, createdAt: Date.now(), ...ev });
-  return true;
-}
-function matchesSub(rec, sb) {
-  if (!['approved', 'auto_approved'].includes(rec.status) || rec.cat !== sb.cat) return false;
-  if (sb.budget && rec.price > sb.budget) return false;
-  return true;
-}
-function mailSubject(evs) {
-  if (evs.length === 1) {
-    const e = evs[0];
-    if (e.type === 'expert') return 'Знайдено нового фахівця для вас';
-    return { planned: 'Ваша консультація запланована', done: 'Консультацію завершено', action: 'Оновлення статусу вашої консультації' }[e.status];
-  }
-  if (evs.every(e => e.type === 'expert')) return 'Знайдено нових фахівців для вас';
-  if (evs.every(e => e.type === 'status')) return 'Оновлення статусу вашої консультації';
-  return 'Нові фахівці і оновлення ваших консультацій';
-}
 const lastMailAt = email => (db.outbox || []).filter(mm => mm.email.toLowerCase() === email.toLowerCase()).reduce((mx, mm) => Math.max(mx, mm.sentAt), 0);
-function runNotifier() {
-  let changed = ensureMailData();
-  const now = Date.now();
-  // 1. Нові фахівці для підписок: лише ті, що зареєструвались після підписки і підходять під запит
-  for (const sb of db.subscriptions) {
-    sb.notifiedExpertIds = sb.notifiedExpertIds || [];
-    const owner = db.users.find(x => x.id === sb.userId) || {};
-    for (const rec of db.experts) {
-      if ((rec.submittedAt || 0) <= sb.createdAt || sb.notifiedExpertIds.includes(rec.id) || rec.id === owner.expertId || !matchesSub(rec, sb)) continue;
-      sb.notifiedExpertIds.push(rec.id); changed = true;
-      queueEvent(sb.userId, `expert:${sb.id}:${rec.id}`, { type: 'expert', subId: sb.id, expertId: rec.id, expertName: rec.name, cat: rec.cat, price: rec.price });
-    }
-  }
-  // 2. Консультації: реагуємо лише на зміну стану, а не на будь-яке оновлення запису
-  for (const b of db.bookings) {
-    const st = consultStatus(b);
-    if (b.notifiedStatus === st) continue;
-    b.notifiedStatus = st; changed = true;
-    queueEvent(b.clientId, `status:${b.id}:${st}`, { type: 'status', bookingId: b.id, expertName: b.expertName, status: st, at: b.at });
-  }
-  // 3. Відправлення: лише на підтверджену пошту, один лист на добу, події за добу разом
-  const byUser = {};
-  db.mailEvents.forEach(e => { (byUser[e.userId] = byUser[e.userId] || []).push(e); });
-  for (const [userId, evs] of Object.entries(byUser)) {
-    const u = db.users.find(x => x.id === userId);
-    if (!u || !u.emailConfirmed) continue;
-    const last = lastMailAt(u.email);
-    if (last && now - last < DAY) continue;
-    db.outbox.push({ id: uid('m'), userId, email: u.email, sentAt: now, subject: mailSubject(evs),
-                     items: evs.map(e => ({ ...e })), keys: evs.map(e => e.key) });
-    db.mailEvents = db.mailEvents.filter(e => e.userId !== userId);
-    changed = true;
-  }
-  if (changed) commit();
-  return changed;
-}
 // Листи і підписки людини: клієнт і фахівець з однією поштою бачать спільну скриньку
 const myMail = u => (db.outbox || []).filter(mm => mm.email.toLowerCase() === u.email.toLowerCase()).sort((a, b) => b.sentAt - a.sentAt);
 const fmtDateTime = ms => `${new Date(ms).toLocaleDateString('uk-UA', { day: 'numeric', month: 'long' })}, ${hhmm(ms)}`;
@@ -1775,8 +1671,9 @@ PAGES.mail = m => {
     : `<li>Консультація з фахівцем <strong>${esc(it.expertName)}</strong>: статус «${CONSULT_STATUS[it.status]}»${it.at ? `, ${esc(whenText(it.at))} (${utcLabel(VIEW_TZ)})` : ''}. <a href="#/consult/${it.bookingId}">Сторінка консультації</a></li>`;
   m.innerHTML = `
     <h2>Пошта</h2>
-    <p class="hint">Прототип: листи імітуються. Справжні листи підуть на ${esc(u.email)}, коли з'явиться сервер.</p>
-    ${u.emailConfirmed ? '' : '<div class="warn">Пошту не підтверджено, тому листи не відправляються. <a href="#/profile">Підтвердити в профілі</a></div>'}
+    <p class="hint">${db.server.mail === 'gmail' ? `Листи надсилаються на ${esc(u.email)}. Тут їхні копії.`
+      : db.server.mail === 'off' ? 'Відправку листів на сервері ще не налаштовано, тому листи поки не надсилаються. Події чекають у черзі.'
+      : 'Сервер у режимі розробки: листи записуються, але не надсилаються.'}</p>
     ${pending.length ? `<p class="hint">Подій у черзі: ${pending.length}.${last && Date.now() - last < DAY ? ` Наступний лист не раніше ${esc(fmtDateTime(last + DAY))}: не більше одного листа на добу.` : ''}</p>` : ''}
     ${letters.length ? letters.map(mm => `<div class="card mail" data-mail="${mm.id}">
         <div class="row"><strong>${esc(mm.subject)}</strong><span class="hint">${esc(fmtDateTime(mm.sentAt))}</span></div>
@@ -1793,14 +1690,19 @@ PAGES.consult = (m, r) => {
 PAGES.sub = (m, r) => {
   const u = me(), sb = (db.subscriptions || []).find(x => x.id === r.param);
   if (!u || !sb || (sb.userId !== u.id && sb.userId !== u.clientId)) return PAGES.notFound(m);
-  if (sb.userId !== u.id) { db.currentUserId = sb.userId; commit(); }
+  if (sb.userId !== u.id) { switchRole('client', null).then(() => { flow = freshFlow(); flow.text = sb.text; redirect('/analysis'); }); return; }
   flow = freshFlow(); flow.text = sb.text;
   redirect('/analysis');
 };
-setInterval(() => { if (runNotifier() && ['mail', 'cabinet'].includes(current)) render({ silent: true }); else renderNav(); }, 60000);
+// Раз на хвилину підтягуємо свіжі дані: нові листи, стани консультацій
+setInterval(async () => {
+  try { await loadState(); } catch { return; }
+  if (current === 'mail') render({ silent: true }); else renderNav();
+}, 60000);
 
-showStorageWarn();
-render();
+// Старт: спершу дані з сервера, потім сторінка
+// Заявка з вкладки відновлюється лише тепер, коли сервер сказав, хто увійшов (помилка 5)
+loadState().then(() => { flow = loadFlow() || flow; }).catch(() => { serverOK = false; showStorageWarn(); }).finally(() => render());
 </script>
 </body>
 </html>
